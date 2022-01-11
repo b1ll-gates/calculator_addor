@@ -1,0 +1,15 @@
+{
+  "name": "adder calculator",
+  "version": "1.0.0",
+  "description": "calculator python program",
+  "dependencies": {
+    "@openzeppelin/contracts": "3.4.1",
+    "dotenv": "^8.2.0",
+    "solc": "^0.8.0",
+    "truffle": "5.2.3",
+    "truffle-hdwallet-provider": "^1.0.17"
+  },
+  "devDependencies": {
+    "@truffle/hdwallet-provider": "^1.2.2"
+  }
+}
