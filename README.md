@@ -1,5 +1,3 @@
-# Poetry NFT smart contract, with build in marketplace
-
 ## i. Add private key to .env
 ## ii. npm install
 
