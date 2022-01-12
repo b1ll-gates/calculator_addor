@@ -15,86 +15,109 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
 
     address payable private _devWallet;
+    address payable public _stakeLiquidity = address(0);
     uint8 private _tax = 1;
 
     IERC20 private _nwBTCToken;
-    IERC721 private _nft;
+    //IERC721 private _nft;
 
+    IERC721[] public approvedContracts;
     uint256[] autionIds;
 
     mapping (uint256 => Auction) auctionDetails;
-
-    constructor( IERC20 tkn , IERC721 nft ) {
-        _nwBTCToken = tkn;
-        _nft = nft;
-    }
-
-    function onERC721Received(
-            address, 
-            address from, 
-            uint256 tokenId, 
-            bytes calldata
-            )external override returns(bytes4) {
-        
-
-        uint256 auctionId = uint256(keccak256(abi.encode(uint256(msg.sender), tokenId)));
-        auctionDetails[auctionId] = Auction({
-            nftContract: IERC721(msg.sender),
-            bidIsComplete: false,
-            seller: from,
-            price: 0,
-            buyNow: 0,
-            timestamp: block.timestamp,
-            winningBidder: address(0),
-            tokenId: tokenId
-        });
-
-            return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
-    } 
-
+    
+    uint256 public auctionTimePeriod = 60*60*24*14;
+    uint256 public maxBidChange = 20000000;
+ 
     struct Auction {
         IERC721 nftContract;
         bool bidIsComplete;
         address seller;
-        uint256 price;
+        uint256 highestBid;
         uint256 buyNow;
         uint256 timestamp;
         address payable winningBidder;
         uint256 tokenId;
     }
-
-    function houseKeeping() internal {
-        //remove old auctions
-    }
-
-
-    Auction[] offers;
-
-    mapping (uint256 => Auction) tokenIdToOffer;
-    mapping (uint256 => uint256) tokenIdToOfferId;
-
+   
     event MarketTransaction(string TxType, address owner, uint256 tokenId);
+    
+    constructor( IERC20 tkn , IERC721 nft ) {
+        _nwBTCToken = tkn;
+        //_nft = nft;
+        addApprovedContract( nft );
+    }
+    
+    //////////////////////////////////////////////////////////////SELLER FUNCTIONS
+    function onERC721Received(
+            address, 
+            address from, 
+            uint256 tokenId, 
+            bytes calldata
+        ) external override returns(bytes4) {
+        
+        uint256 auctionId = uint256(keccak256(abi.encode(uint256(msg.sender), tokenId)));
+        auctionDetails[auctionId] = Auction({
+            nftContract: IERC721(msg.sender),
+            bidIsComplete: false,
+            seller: from,
+            highestBid: 0,
+            buyNow: 0,
+            timestamp: block.timestamp,
+            winningBidder: address(0),
+            tokenId: tokenId
+        });
+        emit MarketTransaction("forSale", from, tokenId);
+        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+    } 
 
+    function setBuyNow( uint256 v ) external returns ( bool ) {
+        //require v > highestBid && ! bidIscomplete 
+        //require msg.sender == seller
+        return true;
+    }
 
-
-     function completeAuction(uint256 auctionId) external {
+    function completeAuction(uint256 auctionId) external {
         auctionDetails[auctionId].bidIsComplete = true;
     }
 
-     function completeAuction(uint256 auctionId) external {
-        auctionDetails[auctionId].bidIsComplete = true;
+    function withdrawAution( IERC721 addr , uint256 tknID  ) external {
+        //requie !bidIsComplete
+        //require msg.sender == seller 
+        emit MarketTransaction("endSale", from, tokenId);
+    }
+
+    function reNewAution( IERC721 addr , uint256 tknID ) external returns ( bool ) {
+        //timestamp = block.timestamp;
     }
 
 
-    function getOffer(uint256 _tokenId)
-        public
-        view
+    ///////////////////////////////////////////////////////////BUYER FUNCTIONS    
+
+    function buyNow( IERC721 _contract , uint256 _tokenId ) external {
+
+        
+        require( _nwBTCToken.allowance( msg.sender, address(this) ) >= _price,"Insuficient Allowance");
+        require(_nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price),"transfer Failed");
+    }
+
+    function setBid( IERC721 _contract, uint256 _tokenId ) external {
+
+    
+    }
+    
+    ///////////////////////////////////////////////////////////UI FUNCTIONS
+    function getAuction( IERC721 _contract, uint256 _tokenId) external view
         returns
         (
-         address seller,
-         uint256 price,
-         uint256 tokenId
-        ) {
+        IERC721 nftContract;
+        bool bidIsComplete;
+        address seller;
+        uint256 highestBid;
+        uint256 buyNow;
+        uint256 timestamp;
+        uint256 tokenId;
+         ) {
             Auction storage offer = tokenIdToOffer[_tokenId];
             return (
                     offer.seller,
@@ -109,13 +132,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         
     }
 
-    uint256 _aution_period = 60*60*24*14;
-
-    function setAutionTimePeriod( uint256 v ) external onlyOwner {
-        _aution_period = v;
-    }
-
-  function getTokensOnSale( address addr ) public view returns(uint256[] memory listOfToken){
+  function getTokensOnSale( IERC721 _contract , address addr ) public view returns(uint256[] memory listOfToken){
         uint256 totalOffers = offers.length;
 
         if (totalOffers == 0) {
@@ -139,8 +156,8 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         }
     }
 
-/*
-    function getAllTokensOnSale( ECR721 nftContract ) public view returns(uint256[] memory listOfToken){
+
+    function getAllTokensOnSale( IECR721 _contract ) public view returns(uint256[] memory listOfToken){
         uint256 totalOffers = offers.length;
 
         if (totalOffers == 0) {
@@ -160,6 +177,35 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         }
     }
 
+
+
+
+
+
+
+
+
+ 
+    function houseKeeping() internal {
+        //remove old auctions
+        for(uint256 i = 0; i < autionIds.length; i++ ) {
+            if ( ! auctionDetails[ autionIds[ i ] ].bidIsComplete
+                && ( block.timestamp - auctionDetails[ autionIds[ i ].timestamp ) > 
+
+    mapping (uint256 => Auction) auctionDetails;
+     }
+
+
+
+    Auction[] offers;
+
+    mapping (uint256 => Auction) tokenIdToOffer;
+    mapping (uint256 => uint256) tokenIdToOfferId;
+
+
+
+
+   
     function setOffer(uint256 _price, uint256 _tokenId)
         public
         nonReentrant

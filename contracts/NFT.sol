@@ -37,11 +37,10 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
    
     //Mappings
     mapping(uint256 => Body) public indexToBodyType;
-    mapping(uint256 => bytes[]) public traitArray;
     mapping(uint256 => bool) hashToMinted;
     mapping(uint256 => uint256) tokenIdToHash;
     //uint256s
-    uint256 MAX_SUPPLY = 0xFFFFFFFF;
+    uint256 MAX_SUPPLY = 0xFFFFFFFFFF;
 
     uint8 public _userCreatedOffset = 1;
     
@@ -51,8 +50,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
     }
     
     function getRating( uint256 _tkn ) external returns ( uint256 ) {
-        bytes8 b = tokenIdToHash[ _tkn ];
-        return uint256(  uint8( b[2] ) | uint8( b[3] )<<8 | uint8( b[4] )<<16 );
+        uint256 h = tokenIdToHash[ _tkn ];
+        return (  h >> 24 ) & 0xFFFFFF;
     }
 
     /**
@@ -70,16 +69,16 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         string memory svgString;
         uint8[24][24] memory placedPixels;
 
-        bytes8 hash = tokenIdToHash[ _tokenId ];
+        uint256 hash = tokenIdToHash[ _tokenId ];
 
         //BG COLOUR
-        uint8 bgR = uint8( hash[2] );
-        uint8 bgB = uint8(  hash[ 3 ] );
-        uint8 bgG = uint8(  hash[ 4 ] );
+        uint8 bgR = uint8( (hash>>24)&0xff );
+        uint8 bgB = uint8( (hash>>32)&0xff );
+        uint8 bgG = uint8( (hash>>40)&0xff );
 
-        uint256 _indexBody = uint256(hash[ 0 ]);
-        uint256 _indexEye = uint256(  uint8(hash[ 1 ]) % uint8( indexToBodyType[ _indexBody ].eyes.length ) );
-        uint256 _indexMouth = uint256(  uint8(hash[ 1 ]) % uint8( indexToBodyType[ _indexBody ].mouth.length ) );
+        uint256 _indexBody = hash & 0xff;
+        uint256 _indexEye = ( ( hash >> 8 ) 0xff ) % uint8( indexToBodyType[ _indexBody ].eyes.length ) );
+        uint256 _indexMouth = ( ( hash >> 16 ) & 0xff ) % uint8( indexToBodyType[ _indexBody ].mouth.length ) );
 
         //BODY
         for ( uint16 j = 0; j < indexToBodyType[ _indexBody ].pixels.length; j+=3 ) {
@@ -139,7 +138,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                                 abi.encodePacked(
                                     '{"name": "SPERM+ #',
                                     NFTLibrary.toString(_tokenId),
-                                    '", "description": "Healthy avatar.", "image": "data:image/svg+xml;base64,',
+                                    '", "description": "Healthy & soverign.", "image": "data:image/svg+xml;base64,',
                                     NFTLibrary.encode(
                                         bytes( svgString)
                                     ),
@@ -172,7 +171,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         return tokenCount;
     }
 
-    function getHash(uint256 season,  uint256 _t ,address _a , uint256 _c ) internal view returns (uint256) {
+    function getHash(uint256 season,  uint256 _t ,address _a , uint256 _c )
+        internal view returns (uint256) {
         
         require(_c < 10);
 
@@ -183,7 +183,6 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                 uint256(
                     keccak256(
                         abi.encodePacked(
-                            address(this),
                             block.timestamp,
                             block.difficulty,
                             _t,
@@ -197,7 +196,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         return _hash;
     }
 
-    function setArtwork( bytes memory _bodyPixels, string memory _name, bytes[] memory _eyes, bytes[] memory _mouth ) external onlyOwner returns (uint256) {
+    function setArtwork( bytes memory _bodyPixels, string memory _name, bytes[] memory _eyes, bytes[] memory _mouth )
+        external onlyOwner returns (uint256) {
         
         _bodyCount.increment();
 
@@ -220,25 +220,13 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         public
         payable
         nonReentrant
-        returns (uint256)
     {
         require(totalSupply() < MAX_SUPPLY, "None left");
         require(_bodyCount.current() > 0, "No default art");
         require(msg.value >= _price, "Not enough tokens");
         
-
-      //  _nwBTCToken.approve(msg.sender,msg.value);
-        //uint256 allowance = _nwBTCToken.allowance( msg.sender, _stakeAddress);
-        
         require( _nwBTCToken.allowance( msg.sender, address(this) ) >= _price,"Insuficient Allowance");
-    
         require(_nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price),"transfer Failed");
-
-        //require(allowance >= _price, "Check the token allowance");
-        
-        //_nwBTCToken.transferFrom(msg.sender, _stakeAddress, msg.value);
-
-        //msg.sender.transfer(amount);
 
         _tokenIds.increment();
         _traitsIds.increment();
@@ -247,9 +235,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         tokenIdToHash[thisTokenId] = getHash( _bodyCount.current() , thisTokenId, msg.sender, 0);
         
         hashToMinted[ tokenIdToHash[thisTokenId] ] = true;
-        _mint(msg.sender, thisTokenId); //Does this zepplin function have an emit?
-        return thisTokenId;
-      //  emit Minted( msg.sender , _tokenIds.current() );
+        _mint(msg.sender, thisTokenId);
+        //emits: Transfer(from,to,tokenID)
     }
 
 
