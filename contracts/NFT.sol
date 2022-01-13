@@ -77,8 +77,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         uint8 bgG = uint8( (hash>>40)&0xff );
 
         uint256 _indexBody = hash & 0xff;
-        uint256 _indexEye = ( ( hash >> 8 ) 0xff ) % uint8( indexToBodyType[ _indexBody ].eyes.length ) );
-        uint256 _indexMouth = ( ( hash >> 16 ) & 0xff ) % uint8( indexToBodyType[ _indexBody ].mouth.length ) );
+        uint256 _indexEye = ( ( hash >> 8 ) & 0xff ) % uint8( indexToBodyType[ _indexBody ].eyes.length );
+        uint256 _indexMouth = ( ( hash >> 16 ) & 0xff ) % uint8( indexToBodyType[ _indexBody ].mouth.length );
 
         //BODY
         for ( uint16 j = 0; j < indexToBodyType[ _indexBody ].pixels.length; j+=3 ) {
