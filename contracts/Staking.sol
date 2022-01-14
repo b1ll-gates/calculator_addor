@@ -1,7 +1,10 @@
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract NFTStaking is Ownable {
+contract NFTStaking is IERC721Receiver, Ownable {
 
     using SafeMath for uint256;
     
@@ -12,10 +15,6 @@ contract NFTStaking is Ownable {
     mapping( address => uint256[] ) private addressToStakingIds;
     mapping( uint256 => uint256 ) private tokenIdToStake; 
     mapping( uint256 => uint256 ) private rewardTotal; 
-   
-
-  
-
 
     IERC20 private _nwBTCToken;
 
@@ -28,20 +27,7 @@ contract NFTStaking is Ownable {
         return false;
     }
 
-    function _deleteAuction( uint256 _auctionID ) internal returns (bool) {
-        delete auctionDetails[ _auctionID ];
-        for (uint256 i = 0; i < auctionIds.length ; i++ ) {
-            if ( auctionIds[ i ] == _auctionID ) {
-                auctionIds[ i ] = auctionIds[ auctionIds.length - 1 ];
-                auctionIds.pop();
-                return true;
-            }
-        } 
-        return false;
-    }
-
-
-      function onERC721Received(
+    function onERC721Received(
             address, 
             address from, 
             uint256 tokenId, 
@@ -124,7 +110,7 @@ contract NFTStaking is Ownable {
   ////////////////////////////////////////////////////////////OWNER FUNCTIONS
     //TODO: change to onlyDev
 
-    function addApprovedContract( IERC721 _contract ) onlyOwner {
+    function addApprovedContract( IERC721 _contract ) public onlyOwner {
         approvedContracts.push( _contract );
     }
 
@@ -132,13 +118,13 @@ contract NFTStaking is Ownable {
         require( approvedContracts.length > 0,"No approved contracts");
         for ( uint256 i = 0; i < approvedContracts.length ; i++ ) {
             if ( approvedContracts[ i ] == _contract ) {
-                approvedContracts[ i ] = approvedContracts[ approvedContracts'length - 1 ];
+                approvedContracts[ i ] = approvedContracts[ approvedContracts.length - 1 ];
                 approvedContracts.pop();
             }
         }
     }
 
-    function setToken( ECR20 _tkn) external onlyOwner {
+    function setToken( IERC20 _tkn) external onlyOwner {
         _nwBTCToken = _tkn;
     }
 

@@ -68,7 +68,11 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
 
         string memory svgString;
         uint8[24][24] memory placedPixels;
-
+        string memory metaString = string(
+                                abi.encodePacked(
+                                    '"attributes":','{"Charater":"', indexToBodyType[ _tokenId ].name,'"}'
+                                 ) );
+                          
         uint256 hash = tokenIdToHash[ _tokenId ];
 
         //BG COLOUR
@@ -138,12 +142,11 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                                 abi.encodePacked(
                                     '{"name": "SPERM+ #',
                                     NFTLibrary.toString(_tokenId),
-                                    '", "description": "Healthy & soverign.", "image": "data:image/svg+xml;base64,',
+                                    '", "description": "Healthy.", "image": "data:image/svg+xml;base64,',
                                     NFTLibrary.encode(
                                         bytes( svgString)
                                     ),
-                                    '","attributes":','{"Charater":"', indexToBodyType[ _tokenId ].name,'"}'
-                                   ,"}"
+                                    metaString,"}"
                                 )
                             )
                         )
@@ -160,7 +163,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
     function walletOfOwner(address _wallet)
         public
         view
-        returns (uint256 ) 
+        returns (uint256[] memory ) 
     {
         uint256 tokenCount = balanceOf(_wallet);
 
@@ -168,7 +171,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         for (uint256 i; i < tokenCount; i++) {
             tokensId[i] = tokenOfOwnerByIndex(_wallet, i);
         }
-        return tokenCount;
+        return tokensId;
     }
 
     function getHash(uint256 season,  uint256 _t ,address _a , uint256 _c )

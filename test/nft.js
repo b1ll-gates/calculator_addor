@@ -115,8 +115,8 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log("==========================================");
                  
         console.log("$ NFT: setArtWork( body, name, eye, mouth ) ->");
-        r = await nftInst.mint( BODY_HEX , "sperm" , EYES , MOUTHS , {from: accounts[0] })
-        console.log(JSON.stringify( r['logs'][0]['args'], null , 2) );
+        r = await nftInst.setArtwork( BODY_HEX , "sperm" , EYES , MOUTHS , {from: accounts[0] })
+        console.log(JSON.stringify( r, null , 2) );
         console.log("==========================================");
     
         console.log("$ NFT: _price ->");
@@ -158,22 +158,29 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         r = await tokenInst.allowance.call(accounts[1] , nftInst.address );
         console.log(JSON.stringify( web3.utils.fromWei( r , "ether") , null , 2 ) );
-        console.log("---get allouance");
-        r = await nftInst.getAl.call(accounts[1] , nftInst.address );
-        console.log(JSON.stringify( web3.utils.fromWei( r , "ether") , null , 2 ) );
         
         console.log(`$ NFT: mint() ->`);
-        r = await nftInst.buy( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
+        r = await nftInst.mint( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
         console.log(`$ NFT: mint() ->`);
-        r = await nftInst.buy( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
+        r = await nftInst.mint( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
         console.log(`$ NFT: mint() ->`);
-        r = await nftInst.buy( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
+        r = await nftInst.mint( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
+    
+        console.log(`$ NFT: mint() ->`);
+        r = await nftInst.mint( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
+
+        console.log(`$ NFT: mint() ->`);
+        r = await nftInst.mint( { from: accounts[1], value: web3.utils.toWei("0.1","ether") } ); 
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
