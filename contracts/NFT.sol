@@ -211,6 +211,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
             mouth: _mouth
         });
 
+        indexToBodyType[ _bodyCount.current() ] = _body;
+        return _bodyCount.current();
     }
 
     uint256 public _price = 120000000;

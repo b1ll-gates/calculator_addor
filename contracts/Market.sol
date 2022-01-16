@@ -25,7 +25,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     mapping (uint256 => Auction) auctionDetails;
 
     uint256 public auctionTimePeriod = 60*60*24*14;
-    uint256 public maxBidChange = 20000000;
+    uint256 public maxBidChange = 2 * 10**9 * 10**9;
 
     struct Auction {
         IERC721 nftContract;
@@ -43,6 +43,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     constructor( IERC20 tkn , IERC721 nft ) {
         _nwBTCToken = tkn;
         addApprovedContract( nft );
+        _devWallet = msg.sender;
        // _stakeLiquidity = payable( _liquidity );
     }
 
@@ -97,8 +98,10 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         auctionDetails[ _auctionID ].buyNow = _buyNowPrice;
     }
 
-    function completeAuction(uint256 auctionId) external {
-        auctionDetails[auctionId].bidIsComplete = true;
+    function completeAuction(uint256 _auctionId) external {
+        require( auctionDetails[ _auctionId ].winningBidder != address( 0 ), "There has to be a bid");
+        require( auctionDetails[ _auctionId ].highestBid > 0 , "There has to be a bid");
+        auctionDetails[_auctionId].bidIsComplete = true;
     }
 
     function withdrawAuction( uint256 _auctionID  )
@@ -108,8 +111,9 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
         require( auctionDetails[ _auctionID ].seller == msg.sender, "You have to own the auction");
         require( ! auctionDetails[ _auctionID ].bidIsComplete, "You can't withdraw a complete action");
-        require( block.timestamp - auctionDetails[ _auctionID ].timestamp > auctionTimePeriod
-            && auctionDetails[ _auctionID ].highestBid > 0, "You can't withdraw a played out action");
+        require( block.timestamp - auctionDetails[ _auctionID ].timestamp < auctionTimePeriod
+            || (  block.timestamp - auctionDetails[ _auctionID ].timestamp > auctionTimePeriod
+&& auctionDetails[ _auctionID ].highestBid > 0) , "You can't withdraw a played out action");
 
         Auction storage details = auctionDetails[_auctionID];
         details.nftContract.safeTransferFrom(address(this), details.seller, details.tokenId);
@@ -117,7 +121,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         emit MarketTransaction("endSale", details.seller, details.tokenId);
     }
 
-    function reNewAution( uint256 _auctionID ) external {
+    function reNewAuction( uint256 _auctionID ) external {
         require( auctionDetails[ _auctionID ].seller == msg.sender, "You have to own the auction");
         auctionDetails[ _auctionID ].timestamp = block.timestamp;
     }
@@ -139,7 +143,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             require(_nwBTCToken.transferFrom(msg.sender,_stakeLiquidity,_taxAmount),"transfer Failed");
         }        
         require(_nwBTCToken.transferFrom(msg.sender,_devWallet,_taxAmount),"transfer Failed");
-        require(_nwBTCToken.transferFrom(msg.sender,details.seller,details.buyNow),"transfer Failed");
+        require(_nwBTCToken.transferFrom(msg.sender,details.seller,_amount),"transfer Failed");
 
         details.nftContract.safeTransferFrom(address(this), msg.sender, details.tokenId);
         _deleteAuction( _auctionId );
@@ -160,7 +164,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         require( _nwBTCToken.allowance( msg.sender, address(this) ) >= details.highestBid,"Insuficient Allowance");
 
         _taxAmount = details.highestBid.mul( _tax).div( 100 ); 
-        uint256 _amount = details.buyNow.sub( _taxAmount );
+        uint256 _amount = details.highestBid.sub( _taxAmount );
         if ( _stakeLiquidity != address( 0 ) ) {
             _amount = _amount.sub( _taxAmount );
             require(_nwBTCToken.transferFrom(msg.sender,_stakeLiquidity,_taxAmount),"transfer Failed");
@@ -257,17 +261,21 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             uint256 count = 0;
             uint256 i;
             for (i = 0; i < auctionIds.length; i++) {
-                if( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp < auctionTimePeriod
-                   && auctionDetails[ auctionIds[ i ] ].nftContract == _contract
-                   && ! auctionDetails[ auctionIds[ i ] ].bidIsComplete ) count++;
+                if(
+                   ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod &&
+                   auctionDetails[ auctionIds[ i ] ].nftContract == _contract
+                   && ! auctionDetails[ auctionIds[ i ] ].bidIsComplete
+                    ) count++;
             }
 
             uint256[] memory result = new uint256[]( count );
             count = 0;
             for (i = 0; i < auctionIds.length; i++) {
-                if( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp < auctionTimePeriod
-                   && auctionDetails[ auctionIds[ i ] ].nftContract == _contract
-                   && !  auctionDetails[ auctionIds[ i ] ].bidIsComplete ) result[ count++ ] = auctionIds[ i ];
+                if(
+                   ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod &&
+                    auctionDetails[ auctionIds[ i ] ].nftContract == _contract
+                   && !  auctionDetails[ auctionIds[ i ] ].bidIsComplete
+                ) result[ count++ ] = auctionIds[ i ];
             }
             return result;
         }

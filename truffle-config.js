@@ -7,11 +7,11 @@ module.exports = {
     bsc_testnet: {
       provider: () => new HDWalletProvider(
         privateKeys.split(','),
-        `https://data-seed-prebsc-1-s1.binance.org:8545`
+        `https://data-seed-prebsc-2-s3.binance.org:8545`
       ),
       network_id: 97,
       confirmations: 10,
-      timeoutBlocks: 200,
+      timeoutBlocks: 300,
       skipDryRun: true
     },
     bsc_mainnet: {
@@ -43,3 +43,17 @@ module.exports = {
         port: 9545,
    }
 }
+
+/*
+ *
+ *Testnet BSC RPC Endpoints (ChainID 97):
+
+https://data-seed-prebsc-1-s1.binance.org:8545/
+https://data-seed-prebsc-2-s1.binance.org:8545/
+http://data-seed-prebsc-1-s2.binance.org:8545/
+http://data-seed-prebsc-2-s2.binance.org:8545/
+https://data-seed-prebsc-1-s3.binance.org:8545/
+https://data-seed-prebsc-2-s3.binance.org:8545/
+ *
+ *
+ */
