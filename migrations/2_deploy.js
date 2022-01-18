@@ -5,7 +5,7 @@ const Stake = artifacts.require("Staking");
 
 const nwBTC = `0x619F35DaE59cD6750e75B1FAE90C1543e03b6968`;
 
-/*
+
 module.exports = async function(deployer) {
   await deployer.deploy(Token);
   const token = await Token.deployed()
@@ -21,7 +21,7 @@ module.exports = async function(deployer) {
   console.log(`Contract addresses: ${ JSON.stringify( contracts , null ,2 ) }`);
 };
 
-*/
+/*
 module.exports = async function(deployer) {
   await deployer.deploy(NFT,nwBTC);
   const nft = await NFT.deployed()
@@ -33,4 +33,4 @@ module.exports = async function(deployer) {
   const contracts = { "token" : nwBTC, "nft" : nft.address, "market" : market.address, "stake" : stake.address };
 
   console.log(`Contract addresses: ${ JSON.stringify( contracts , null ,2 ) }`);
-};
+};*/

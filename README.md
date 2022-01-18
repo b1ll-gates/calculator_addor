@@ -22,3 +22,8 @@ truffle exec scripts/mint.js --network bsc_mainnet
 ```
 truffle test --network bsc_testnet
 ```
+
+
+1. migrate contracts
+2. run setArtWork script
+3. run set stakingLiquidity script

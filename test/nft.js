@@ -83,7 +83,34 @@ const testECR20 = it("should test the token", async (  ) => {
         let balance2 = await tokenInst.balanceOf.call( accounts[1] );
         console.log(web3.utils.fromWei( balance2 , "ether" ) );
         console.log("==========================================");
-         
+
+        console.log(`$ ECR20 (contract) : ballanceOf(${ tokenInst.address }) ->`);
+        balance2 = await tokenInst.balanceOf.call( tokenInst.address );
+        console.log(web3.utils.fromWei( balance2 , "ether" ) );
+        console.log("==========================================");
+
+
+        console.log(`$ ECR20 : faucet(${ accounts[1] }) ->`);
+        r = await tokenInst.faucet( {from:accounts[1]} );
+        console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
+
+        console.log(`$ ECR20 : ballanceOf(${ accounts[1] }) ->`);
+        balance2 = await tokenInst.balanceOf.call( accounts[1] );
+        console.log(web3.utils.fromWei( balance2 , "ether" ) );
+        console.log("==========================================");
+        
+        console.log(`$ ECR20 : faucet(${ accounts[1] }) ->`);
+        r = await tokenInst.faucet( {from:accounts[1]} );
+        console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
+
+        console.log(`$ ECR20 : ballanceOf(${ accounts[1] }) ->`);
+        balance2 = await tokenInst.balanceOf.call( accounts[1] );
+        console.log(web3.utils.fromWei( balance2 , "ether" ) );
+        console.log("==========================================");
+
+
         console.log(`$ ECR20 : transfer(${ accounts[1] } , ${ web3.utils.toWei("100.5","ether") }) ->`);
         r = await tokenInst.transfer( accounts[1] , web3.utils.toWei("1000.5","ether") ); //Works because default account is token owner
         console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
@@ -406,7 +433,10 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
-
+        console.log(`$ ECR20 : ballanceOf(${ accounts[2] }) ->`);
+        r = await tokenInst.balanceOf.call( accounts[2] );
+        console.log(web3.utils.fromWei( r , "ether" ) );
+        console.log("==========================================");
 
 
 

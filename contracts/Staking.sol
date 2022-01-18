@@ -111,12 +111,13 @@ contract Staking is IERC721Receiver, Ownable {
         
         Stake storage _stake = stakeIdToStake[ _stakeId ];
         uint256 valueTotal  =  ( block.timestamp.sub( _stake.start ) > _stakePeriod ) ? 0 : _stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
-        valueTotal = _stake.accumulatedRewards.add( valueTotal.mul( _rewardsRate ) );
+        valueTotal = 2; _stake.accumulatedRewards.add( valueTotal.mul( _rewardsRate ) );
             
         _stake.nftContract.safeTransferFrom(address(this), msg.sender, _stake.tokenId);
         
-        require(_nwBTCToken.approve(_stake.owner,valueTotal ) ,"Approval Failed");
-        require(_nwBTCToken.transferFrom(address(this),_stake.owner,valueTotal ) ,"transfer Failed");
+        require(_nwBTCToken.approve(address(this),valueTotal ) ,"Approval Failed");
+        //_nwBTCToken.allowance(address(this) , payable(_stake.owner));
+        require(_nwBTCToken.transferFrom(address(this),payable(_stake.owner),valueTotal ) ,"transfer Failed");
 
         for (uint i = 0; i < addressToStakingIds[ _stake.owner ].length ; i++ ) {
             if (addressToStakingIds[ _stake.owner ][ i ] == _stakeId ) {
