@@ -15,6 +15,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
 
     struct Body {
         string name;
+        uint256 start;
+        uint256 amount;
         bytes pixels;
         bytes[] eyes;
         bytes[] mouth;
@@ -33,7 +35,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     Counters.Counter private _traitsIds;
-    Counters.Counter private _bodyCount;
+    Counters.Counter public _bodyCount;
    
     //Mappings
     mapping(uint256 => Body) public indexToBodyType;
@@ -54,6 +56,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         return (  h >> 24 ) & 0xFFFFFF;
     }
 
+
     /**
      * @dev Returns the SVG and metadata for a token Id
      * @param _tokenId The tokenId to return the SVG and metadata for.
@@ -70,7 +73,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         uint8[24][24] memory placedPixels;
         string memory metaString = string(
                                 abi.encodePacked(
-                                    '"attributes":','{"Charater":"', indexToBodyType[ _tokenId ].name,'"}'
+                                    '"attributes":','{"Character":"', indexToBodyType[ _tokenId ].name,'"}'
                                  ) );
                           
         uint256 hash = tokenIdToHash[ _tokenId ];
@@ -140,12 +143,11 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                         bytes(
                             string(
                                 abi.encodePacked(
-                                    '{"name": "SPERM+ #',
-                                    NFTLibrary.toString(_tokenId),
-                                    '", "description": "Healthy.", "image": "data:image/svg+xml;base64,',
-                                    NFTLibrary.encode(
-                                        bytes( svgString)
-                                    ),
+                                    '{"name": "SPERM+ ',
+                                        NFTLibrary.toString( _tokenId - indexToBodyType[ _indexBody ].start ),'/',
+                                        NFTLibrary.toString( indexToBodyType[ _indexBody ].amount),
+                                        '","description": "Healthy.", "image": "data:image/svg+xml;base64,',
+                                        NFTLibrary.encode( bytes( svgString)),'",',
                                     metaString,"}"
                                 )
                             )
@@ -190,7 +192,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                             block.difficulty,
                             _t,
                             _a,
-                            _c
+                            ( _c + i )
                         )
                     )
                 ) % 0xFF;
@@ -199,13 +201,15 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         return _hash;
     }
 
-    function setArtwork( bytes memory _bodyPixels, string memory _name, bytes[] memory _eyes, bytes[] memory _mouth )
+    function setArtwork( uint256 _amount, bytes memory _bodyPixels, string memory _name, bytes[] memory _eyes, bytes[] memory _mouth )
         external onlyOwner returns (uint256) {
         
         _bodyCount.increment();
 
         Body memory _body  = Body({
             name : _name,
+            start: _tokenIds.current(),
+            amount: _amount,
             pixels : _bodyPixels,
             eyes: _eyes,
             mouth: _mouth
@@ -215,10 +219,16 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         return _bodyCount.current();
     }
 
-    uint256 public _price = 120000000;
+    uint256 public _price = 120000000000000000;
 
    function setPrice( uint256 v) external onlyOwner {
         _price = v;
+    }
+
+    uint256 public _mintEnd = 1200;
+
+    function setMintSend( uint256 v ) external {
+        _mintEnd = v;
     }
 
     function mint()
@@ -226,7 +236,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         payable
         nonReentrant
     {
-        require(totalSupply() < MAX_SUPPLY, "None left");
+        require( ( indexToBodyType[ _bodyCount.current() ].start + indexToBodyType[ _bodyCount.current() ].amount )  > (_tokenIds.current() + 1) , "Season has ended");
         require(_bodyCount.current() > 0, "No default art");
         require(msg.value >= _price, "Not enough tokens");
         

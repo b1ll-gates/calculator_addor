@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 //import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
@@ -27,6 +28,9 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     uint256 public auctionTimePeriod = 60*60*24*14;
     uint256 public maxBidChange = 2 * 10**9 * 10**9;
 
+    using Counters for Counters.Counter;
+    Counters.Counter private _auctionIds;
+ 
     struct Auction {
         IERC721 nftContract;
         bool bidIsComplete;
@@ -75,8 +79,10 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         ) external override returns(bytes4) {
         
         require( contractIsApproved( IERC721(msg.sender) ) ,"Contract must be approved");
-        uint256 auctionId = uint256(keccak256(abi.encode((msg.sender), tokenId)));
-        auctionDetails[auctionId] = Auction({
+        //uint256 auctionId = uint256(keccak256(abi.encode((msg.sender), tokenId)));
+        _auctionIds.increment();
+
+        auctionDetails[ _auctionIds.current()  ] = Auction({
             nftContract: IERC721(msg.sender),
             bidIsComplete: false,
             seller: from,
@@ -87,8 +93,8 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             tokenId: tokenId
         });
 
-        auctionIds.push( auctionId );
-        emit MarketTransaction("forSale", from, tokenId);
+        auctionIds.push( _auctionIds.current() );
+        emit MarketTransaction("forSale", from, _auctionIds.current() );
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     }
 
@@ -214,6 +220,32 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
                     action.tokenId
                    );
         }
+
+    function getAuctionByToken( address _contract , uint256 _tokenId ) external view
+        returns (
+            uint256 auctionId,
+            bool bidIsComplete,
+            address seller,
+            uint256 highestBid,
+            uint256 buyNow,
+            uint256 timestamp
+        ) {
+            for (uint256 i = 0; i < auctionIds.length; i++) {
+                if( auctionDetails[ auctionIds[ i ] ].nftContract == IERC721(_contract) 
+                    && auctionDetails[ auctionIds[ i ] ].tokenId == _tokenId ){
+                        Auction storage action = auctionDetails[ auctionIds[ i ] ];
+                        return (
+                            i,
+                            action.bidIsComplete,
+                            action.seller,
+                            action.highestBid,
+                            action.buyNow,
+                            action.timestamp
+                        );
+                }
+            }
+        revert("Token not found");
+    }
 
     function getWonAuctions( address _addr ) public view returns(uint256[] memory listofTokens){
         if (auctionIds.length == 0) {

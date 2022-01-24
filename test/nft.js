@@ -152,8 +152,8 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log("++++++++++++++++++++++++++++++++++++++++++");
         console.log("==========================================");
                  
-        console.log("$ NFT: setArtWork( body, name, eye, mouth ) ->");
-        r = await nftInst.setArtwork( BODY_HEX , "sperm" , EYES , MOUTHS , {from: accounts[0] })
+        console.log("$ NFT: setArtWork( 12000, body, name, eye, mouth ) ->");
+        r = await nftInst.setArtwork( 12000, BODY_HEX , "sperm" , EYES , MOUTHS , {from: accounts[0] })
         console.log(JSON.stringify( r, null , 2) );
         console.log("==========================================");
     
