@@ -238,7 +238,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
     {
         require( ( indexToBodyType[ _bodyCount.current() ].start + indexToBodyType[ _bodyCount.current() ].amount )  > (_tokenIds.current() + 1) , "Season has ended");
         require(_bodyCount.current() > 0, "No default art");
-        require(msg.value >= _price, "Not enough tokens");
+        //require(msg.value >= _price, "Not enough tokens");
         
         require( _nwBTCToken.allowance( msg.sender, address(this) ) >= _price,"Insuficient Allowance");
         require(_nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price),"transfer Failed");

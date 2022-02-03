@@ -33,7 +33,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
  
     struct Auction {
         IERC721 nftContract;
-        bool bidIsComplete;
         address seller;
         uint256 highestBid;
         uint256 buyNow;
@@ -42,7 +41,8 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         uint256 tokenId;
     }
 
-    event MarketTransaction(string TxType, address owner, uint256 tokenId);
+    //event MarketTransaction(string TxType, address owner, uint256 tokenId);
+    event MarketTransaction(string TxType, address owner, IERC721 nftContract, uint256 auctionId, uint256 tokenId);
 
     constructor( IERC20 tkn , IERC721 nft ) {
         _nwBTCToken = tkn;
@@ -84,7 +84,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
         auctionDetails[ _auctionIds.current()  ] = Auction({
             nftContract: IERC721(msg.sender),
-            bidIsComplete: false,
             seller: from,
             highestBid: 0,
             buyNow: 0,
@@ -94,7 +93,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         });
 
         auctionIds.push( _auctionIds.current() );
-        emit MarketTransaction("forSale", from, _auctionIds.current() );
+        emit MarketTransaction("forSale", from, IERC721( msg.sender ) , _auctionIds.current(), tokenId);
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     }
 
@@ -104,27 +103,20 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         auctionDetails[ _auctionID ].buyNow = _buyNowPrice;
     }
 
-    function completeAuction(uint256 _auctionId) external {
-        require( auctionDetails[ _auctionId ].winningBidder != address( 0 ), "There has to be a bid");
-        require( auctionDetails[ _auctionId ].highestBid > 0 , "There has to be a bid");
-        auctionDetails[_auctionId].bidIsComplete = true;
-    }
-
     function withdrawAuction( uint256 _auctionID  )
         external
         nonReentrant
     {
 
         require( auctionDetails[ _auctionID ].seller == msg.sender, "You have to own the auction");
-        require( ! auctionDetails[ _auctionID ].bidIsComplete, "You can't withdraw a complete action");
         require( block.timestamp - auctionDetails[ _auctionID ].timestamp < auctionTimePeriod
-            || (  block.timestamp - auctionDetails[ _auctionID ].timestamp > auctionTimePeriod
-&& auctionDetails[ _auctionID ].highestBid > 0) , "You can't withdraw a played out action");
+            || (  block.timestamp - auctionDetails[ _auctionID ].timestamp <  2*auctionTimePeriod
+&& auctionDetails[ _auctionID ].highestBid > 0) , "You can't withdraw a played out action, till auctionPeriod");
 
         Auction storage details = auctionDetails[_auctionID];
         details.nftContract.safeTransferFrom(address(this), details.seller, details.tokenId);
         _deleteAuction( _auctionID );
-        emit MarketTransaction("endSale", details.seller, details.tokenId);
+        emit MarketTransaction("endSale", details.seller, IERC721( details.nftContract ), _auctionID, details.tokenId );
     }
 
     function reNewAuction( uint256 _auctionID ) external {
@@ -154,7 +146,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         details.nftContract.safeTransferFrom(address(this), msg.sender, details.tokenId);
         _deleteAuction( _auctionId );
 
-        emit MarketTransaction("buy", msg.sender, details.tokenId);
+        emit MarketTransaction("buy", msg.sender, IERC721( details.nftContract ) , _auctionId, details.tokenId );
     }
 
     function payForWonAuction( uint256 _auctionID )
@@ -165,7 +157,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         uint256 _taxAmount;
         Auction storage details = auctionDetails[ _auctionID ];
 
-        require( details.bidIsComplete || (block.timestamp - details.timestamp ) > auctionTimePeriod , "Auction must be over");
+        require( (block.timestamp - details.timestamp ) > auctionTimePeriod , "Auction must be over");
         require(  details.winningBidder == msg.sender,"You must be the aution winner");
         require( _nwBTCToken.allowance( msg.sender, address(this) ) >= details.highestBid,"Insuficient Allowance");
 
@@ -181,13 +173,12 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         details.nftContract.safeTransferFrom(address(this), msg.sender, details.tokenId);
         _deleteAuction( _auctionID );
 
-        emit MarketTransaction("buy", msg.sender, details.tokenId);
+        emit MarketTransaction("buy", msg.sender, IERC721( details.nftContract ), _auctionID, details.tokenId);
 
      }
 
     function setBid( uint256 _auctionID , uint256 _bidAmount) external {
         require( auctionDetails[ _auctionID ].seller != msg.sender, "You cannot own the auction item");
-        require( ! auctionDetails[ _auctionID ].bidIsComplete, "The bidding is complete");
         require( auctionDetails[ _auctionID ].seller != msg.sender, "You cannot own the auction item");
         require( auctionDetails[ _auctionID ].highestBid < _bidAmount, "You must place a higher bid");
         require( auctionDetails[ _auctionID ].highestBid + maxBidChange >= _bidAmount, "You cannot exceed the max bid change");
@@ -201,7 +192,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         returns
         (
         IERC721 nftContract,
-        bool bidIsComplete,
         address seller,
         uint256 highestBid,
         uint256 buyNow,
@@ -212,7 +202,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             Auction storage action = auctionDetails[_auctionID];
             return (
                     action.nftContract,
-                    action.bidIsComplete,
                     action.seller,
                     action.highestBid,
                     action.buyNow,
@@ -224,7 +213,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     function getAuctionByToken( address _contract , uint256 _tokenId ) external view
         returns (
             uint256 auctionId,
-            bool bidIsComplete,
             address seller,
             uint256 highestBid,
             uint256 buyNow,
@@ -236,7 +224,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
                         Auction storage action = auctionDetails[ auctionIds[ i ] ];
                         return (
                             i,
-                            action.bidIsComplete,
                             action.seller,
                             action.highestBid,
                             action.buyNow,
@@ -247,39 +234,45 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         revert("Token not found");
     }
 
-    function getWonAuctions( address _addr ) public view returns(uint256[] memory listofTokens){
+    function getWonAuctions( IERC721 _contract , address _addr ) public view returns(uint256[] memory listofTokens){
         if (auctionIds.length == 0) {
             return new uint256[](0);
         } else {
             uint256 count = 0;
             uint256 i;
             for (i = 0; i < auctionIds.length; i++) {
-                if( auctionDetails[ auctionIds[ i ] ].winningBidder == _addr ) count++;
+                if( auctionDetails[ auctionIds[ i ] ].winningBidder == _addr 
+                    && ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) > auctionTimePeriod
+                    && auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) count++;
             }
 
             uint256[] memory result = new uint256[]( count );
             count = 0;
             for (i = 0; i < auctionIds.length; i++) {
-                if( auctionDetails[ auctionIds[ i ] ].winningBidder == _addr ) result[ count++ ] = auctionIds[ i ];
+                if( auctionDetails[ auctionIds[ i ] ].winningBidder == _addr
+                    && ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) > auctionTimePeriod
+                    && auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) result[ count++ ] = auctionIds[ i ];
             }
             return result;
         }
     }
 
-  function getTokensOnSale( address _addr ) public view returns(uint256[] memory listOfToken){
+  function getTokensOnSale( IERC721 _contract , address _addr ) public view returns(uint256[] memory listOfToken){
         if (auctionIds.length == 0) {
             return new uint256[](0);
         } else {
             uint256 count = 0;
             uint256 i;
             for (i = 0; i < auctionIds.length; i++) {
-                if( auctionDetails[ auctionIds[ i ] ].seller == _addr ) count++;
+                if( auctionDetails[ auctionIds[ i ] ].seller == _addr
+                    && auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) count++;
             }
 
             uint256[] memory result = new uint256[]( count );
             count = 0;
             for (i = 0; i < auctionIds.length; i++) {
-                if( auctionDetails[ auctionIds[ i ] ].seller == _addr ) result[ count++ ] = auctionIds[ i ];
+                if( auctionDetails[ auctionIds[ i ] ].seller == _addr
+                    && auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) result[ count++ ] = auctionIds[ i ];
             }
             return result;
         }
@@ -295,9 +288,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             for (i = 0; i < auctionIds.length; i++) {
                 if(
                    ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod &&
-                   auctionDetails[ auctionIds[ i ] ].nftContract == _contract
-                   && ! auctionDetails[ auctionIds[ i ] ].bidIsComplete
-                    ) count++;
+                   auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) count++;
             }
 
             uint256[] memory result = new uint256[]( count );
@@ -305,9 +296,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             for (i = 0; i < auctionIds.length; i++) {
                 if(
                    ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod &&
-                    auctionDetails[ auctionIds[ i ] ].nftContract == _contract
-                   && !  auctionDetails[ auctionIds[ i ] ].bidIsComplete
-                ) result[ count++ ] = auctionIds[ i ];
+                    auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) result[ count++ ] = auctionIds[ i ];
             }
             return result;
         }
