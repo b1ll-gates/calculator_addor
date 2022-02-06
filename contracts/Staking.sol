@@ -8,13 +8,15 @@ contract Staking is IERC721Receiver, Ownable {
 
     using SafeMath for uint256;
     
-    uint256 private _rewardsRate = 1;
-    uint256 private _maxStaking = 5;
-    uint256 private _stakePeriod = 60*60*24*7;
+    uint256 public _rewardsRate = 1;
+    uint256 public _maxStaking = 5;
+    uint256 public _stakePeriod = 60*60*24*7;
     
     mapping( address => uint256[] ) private addressToStakingIds;
     mapping( uint256 => Stake ) private stakeIdToStake; 
 
+    event StakingTransaction(string TxType, address owner, IERC721 nftContract, uint256 stakeId, uint256 tokenId);
+    
     struct Stake {
         IERC721 nftContract;
         address owner;
@@ -32,7 +34,7 @@ contract Staking is IERC721Receiver, Ownable {
         addApprovedContract( nft );
     }
 
-    function contractIsApproved( IERC721 _contract ) internal returns ( bool ) {
+    function contractIsApproved( IERC721 _contract ) internal view returns ( bool ) {
         for ( uint256 i = 0; i < approvedContracts.length; i++ ) {
             if ( _contract == approvedContracts[ i ] ) return true;
         }
@@ -65,10 +67,11 @@ contract Staking is IERC721Receiver, Ownable {
         
         addressToStakingIds[ from ].push( stakeId );
          
+        emit StakingTransaction("forStake", from, IERC721( msg.sender ) , stakeId , _tokenId);
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     }
 
-    function allStaked( address addr ) public returns ( uint256[] memory ) {
+    function allStaked( address addr ) public view returns ( uint256[] memory ) {
         uint256[] memory staked =  addressToStakingIds[ addr];
         return staked;
     }
@@ -94,7 +97,6 @@ contract Staking is IERC721Receiver, Ownable {
             uint256 accumulatedRewards
         ){
         Stake storage _stake = stakeIdToStake[ _stakeId ];
-        require( msg.sender == _stake.owner, "Must own the staked token");
         uint256 t =  ( block.timestamp.sub( _stake.start ) > _stakePeriod ) ?
                 0 : _stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
           return (
@@ -129,6 +131,7 @@ contract Staking is IERC721Receiver, Ownable {
  
         delete stakeIdToStake[ _stakeId ];
 
+        emit StakingTransaction("endStake", _stake.owner, _stake.nftContract , _stakeId , _stake.tokenId);
         return valueTotal;
     }
   ////////////////////////////////////////////////////////////OWNER FUNCTIONS

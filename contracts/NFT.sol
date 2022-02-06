@@ -34,7 +34,6 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
  
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
-    Counters.Counter private _traitsIds;
     Counters.Counter public _bodyCount;
    
     //Mappings
@@ -57,6 +56,8 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
     }
 
 
+   
+
     /**
      * @dev Returns the SVG and metadata for a token Id
      * @param _tokenId The tokenId to return the SVG and metadata for.
@@ -71,18 +72,24 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
 
         string memory svgString;
         uint8[24][24] memory placedPixels;
-        string memory metaString = string(
-                                abi.encodePacked(
-                                    '"attributes":','{"Character":"', indexToBodyType[ _tokenId ].name,'"}'
-                                 ) );
-                          
+                         
         uint256 hash = tokenIdToHash[ _tokenId ];
 
         //BG COLOUR
         uint8 bgR = uint8( (hash>>24)&0xff );
         uint8 bgB = uint8( (hash>>32)&0xff );
         uint8 bgG = uint8( (hash>>40)&0xff );
-
+        
+    /*    string memory metaString = string(
+            abi.encodePacked(
+                '"attributes":','{"voice":',
+                    NFTLibrary.toString( bgB ),
+                    ',"heart":',
+                    NFTLibrary.toString( bgG ),
+                    ',"energy":',
+                    NFTLibrary.toString( bgR ), '}'
+             ) );
+      */  
         uint256 _indexBody = hash & 0xff;
         uint256 _indexEye = ( ( hash >> 8 ) & 0xff ) % uint8( indexToBodyType[ _indexBody ].eyes.length );
         uint256 _indexMouth = ( ( hash >> 16 ) & 0xff ) % uint8( indexToBodyType[ _indexBody ].mouth.length );
@@ -91,21 +98,21 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         for ( uint16 j = 0; j < indexToBodyType[ _indexBody ].pixels.length; j+=3 ) {
             uint8 x = uint8( indexToBodyType[ _indexBody ].pixels[ j ] );
             uint8 y = uint8( indexToBodyType[ _indexBody ].pixels[ j + 1 ] );
-            placedPixels[x][y] = uint8( indexToBodyType[ _indexBody ].pixels[ j + 2 ] );
+            placedPixels[x][y] = uint8( indexToBodyType[ _indexBody ].pixels[ j + 2 ] ) + 1;
         }
         
         uint256 pixelCount = indexToBodyType[ _indexBody ].eyes[ _indexEye ].length;              
         for ( uint16 j = 0; j < pixelCount; j+=3 ) {
             uint8 x = uint8( indexToBodyType[ _indexBody ].eyes[ _indexEye ][j] );
             uint8 y = uint8( indexToBodyType[ _indexBody ].eyes[ _indexEye ][j + 1] );
-            placedPixels[x][y] = uint8( indexToBodyType[ _indexBody ].eyes[ _indexEye ][j + 2] );
+            placedPixels[x][y] = uint8( indexToBodyType[ _indexBody ].eyes[ _indexEye ][j + 2] ) + 1;
         }
         
         pixelCount = indexToBodyType[ _indexBody ].mouth[ _indexMouth ].length;              
         for ( uint16 j = 0; j < pixelCount; j+=3 ) {
             uint8 x = uint8( indexToBodyType[ _indexBody ].mouth[ _indexMouth ][j] );
             uint8 y = uint8( indexToBodyType[ _indexBody ].mouth[ _indexMouth ][j + 1] );
-            placedPixels[x][y] = uint8( indexToBodyType[ _indexBody ].mouth[ _indexMouth ][j + 2] );
+            placedPixels[x][y] = uint8( indexToBodyType[ _indexBody ].mouth[ _indexMouth ][j + 2] ) + 1;
         }
          
         for ( uint16 y = 0; y < 24; y++){
@@ -114,7 +121,7 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                     svgString = string(
                         abi.encodePacked(
                             svgString,
-                            "<rect class='c",NFTLibrary.toString(placedPixels[x][y]),
+                            "<rect class='c",NFTLibrary.toString(placedPixels[x][y] - 1),
                             "' x='",
                             NFTLibrary.toString( x ),
                             "' y='",
@@ -131,10 +138,11 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                 '<svg id="sperm-svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 24 24" style="background-color: rgba('
                 , NFTLibrary.toString( bgR ) ,',', NFTLibrary.toString( bgB ) ,',', NFTLibrary.toString( bgG ) ,',0.2);"> ',
                 svgString,
-                "<style>rect{width:1px;height:1px;} #sperm-svg{shape-rendering: crispedges;} .c0{fill:none}.c1{fill:#131313}.c2{fill:#1B1B1B}.c3{fill:#272727}.c4{fill:#3D3D3D}.c5{fill:#5D5D5D}.c6{fill:#858585}.c7{fill:#B4B4B4}.c8{fill:#FFFFFF}.c9{fill:#C7CfDD}.c10{fill:#92A1B9}.c11{fill:#657392}.c12{fill:#424C6E}.c13{fill:#2A2F4E}.c14{fill:#1A1932}.c15{fill:#0E071B}.c16{fill:#1C121C}.c17{fill:#0391F21}.c18{fill:#5D2C28}.c19{fill:#8A4836}.c20{fill:#BF6F4A}.c21{fill:#E69C69}.c22{fill:#F6CA9F}.c23{fill:#F9E6CF}.c24{fill:#EDAB50}.c25{fill:#E07438}.c26{fill:#C64524}.c27{fill:#8E251D}.c28{fill:#FF5000}.c29{fill:#ED7614}.c30{fill:#FFA214}.c31{fill:#FFC825}.c32{fill:#FFEB57}.c33{fill:#D3FC7E}.c34{fill:#99E65F}.c35{fill:#5AC54F}.c36{fill:#33984B}.c37{fill:#1E6F50}.c38{fill:#134C4C}.c39{fill:#0C2E44}.c40{fill:#00396D}.c41{fill:#0069AA}.c42{fill:#0098DC}.c43{fill:#00CDF9}.c44{fill:#0CF1FF}.c45{fill:#94FDFF}.c46{fill:#FDD2ED}.c47{fill:#F389F5}.c48{fill:#DB3FFD}.c49{fill:#7A09FA}.c50{fill:#3003D9}.c51{fill:#0C0293}.c52{fill:#03193F}.c53{fill:#3B1443}.c54{fill:#622461}.c55{fill:#93388F}.c56{fill:#CA52C9}.c57{fill:#C85086}.c58{fill:#F68187}.c59{fill:#F5555D}.c60{fill:#EA323C}.c61{fill:#C42430}.c62{fill:#891E2B}.c63{fill:#571C27}</style></svg>"
+                "<style>rect{width:1px;height:1px;} #sperm-svg{shape-rendering: crispedges;} .c0{fill:#FF0040}.c1{fill:#131313}.c2{fill:#1B1B1B}.c3{fill:#272727}.c4{fill:#3D3D3D}.c5{fill:#5D5D5D}.c6{fill:#858585}.c7{fill:#B4B4B4}.c8{fill:#FFFFFF}.c9{fill:#C7CfDD}.c10{fill:#92A1B9}.c11{fill:#657392}.c12{fill:#424C6E}.c13{fill:#2A2F4E}.c14{fill:#1A1932}.c15{fill:#0E071B}.c16{fill:#1C121C}.c17{fill:#0391F21}.c18{fill:#5D2C28}.c19{fill:#8A4836}.c20{fill:#BF6F4A}.c21{fill:#E69C69}.c22{fill:#F6CA9F}.c23{fill:#F9E6CF}.c24{fill:#EDAB50}.c25{fill:#E07438}.c26{fill:#C64524}.c27{fill:#8E251D}.c28{fill:#FF5000}.c29{fill:#ED7614}.c30{fill:#FFA214}.c31{fill:#FFC825}.c32{fill:#FFEB57}.c33{fill:#D3FC7E}.c34{fill:#99E65F}.c35{fill:#5AC54F}.c36{fill:#33984B}.c37{fill:#1E6F50}.c38{fill:#134C4C}.c39{fill:#0C2E44}.c40{fill:#00396D}.c41{fill:#0069AA}.c42{fill:#0098DC}.c43{fill:#00CDF9}.c44{fill:#0CF1FF}.c45{fill:#94FDFF}.c46{fill:#FDD2ED}.c47{fill:#F389F5}.c48{fill:#DB3FFD}.c49{fill:#7A09FA}.c50{fill:#3003D9}.c51{fill:#0C0293}.c52{fill:#03193F}.c53{fill:#3B1443}.c54{fill:#622461}.c55{fill:#93388F}.c56{fill:#CA52C9}.c57{fill:#C85086}.c58{fill:#F68187}.c59{fill:#F5555D}.c60{fill:#EA323C}.c61{fill:#C42430}.c62{fill:#891E2B}.c63{fill:#571C27}</style></svg>"
             )
         );
 
+        uint256 num = _tokenId - indexToBodyType[ _indexBody ].start ;
         return
             string(
                 abi.encodePacked(
@@ -143,12 +151,12 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
                         bytes(
                             string(
                                 abi.encodePacked(
-                                    '{"name": "SPERM+ ',
-                                        NFTLibrary.toString( _tokenId - indexToBodyType[ _indexBody ].start ),'/',
+                                    '{"name": "',indexToBodyType[ _indexBody ].name,' ',
+                                        NFTLibrary.toString( num ),'/',
                                         NFTLibrary.toString( indexToBodyType[ _indexBody ].amount),
-                                        '","description": "Healthy.", "image": "data:image/svg+xml;base64,',
-                                        NFTLibrary.encode( bytes( svgString)),'",',
-                                    metaString,"}"
+                                        '","description": "Freedom loving art", "image": "data:image/svg+xml;base64,',
+                                        NFTLibrary.encode( bytes( svgString)),'"}'
+                                        //  metaString,"}"
                                 )
                             )
                         )
@@ -225,10 +233,9 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         _price = v;
     }
 
-    uint256 public _mintEnd = 1200;
-
-    function setMintSend( uint256 v ) external {
-        _mintEnd = v;
+    function mintsLeft() external view returns (uint256){
+        return ( indexToBodyType[ _bodyCount.current() ].start + indexToBodyType[_bodyCount.current()].amount ) - _tokenIds.current();
+            
     }
 
     function mint()
@@ -244,7 +251,6 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         require(_nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price),"transfer Failed");
 
         _tokenIds.increment();
-        _traitsIds.increment();
         uint256 thisTokenId = _tokenIds.current();
  
         tokenIdToHash[thisTokenId] = getHash( _bodyCount.current() , thisTokenId, msg.sender, 0);

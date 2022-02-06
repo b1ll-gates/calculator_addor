@@ -115,8 +115,8 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
         Auction storage details = auctionDetails[_auctionID];
         details.nftContract.safeTransferFrom(address(this), details.seller, details.tokenId);
-        _deleteAuction( _auctionID );
         emit MarketTransaction("endSale", details.seller, IERC721( details.nftContract ), _auctionID, details.tokenId );
+        _deleteAuction( _auctionID );
     }
 
     function reNewAuction( uint256 _auctionID ) external {
