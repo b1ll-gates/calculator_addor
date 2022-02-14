@@ -74,12 +74,26 @@ const testECR20 = it("should test the token", async (  ) => {
         r = await tokenInst.totalSupply();
         console.log(web3.utils.fromWei( r , "ether") );
         console.log("==========================================");
+   
+        console.log(`$ ECR20 : faucet(${ accounts[0] }) ->`);
+        r = await tokenInst.faucet( {from:accounts[0]} );
+        console.log( web3.utils.fromWei( r['receipt']['logs'][0]['args']['value'] , "ether") );
+        console.log("==========================================");
+
+        console.log(`$ ECR20 : faucet(${ accounts[0] }) ->`);
+        r = await tokenInst.faucet( {from:accounts[0]} );
+        console.log( web3.utils.fromWei( r['receipt']['logs'][0]['args']['value'] , "ether") );
+        console.log("==========================================");
+
 
         console.log(`$ ECR20 : ballanceOf(${ accounts[0] }) ->`);
         let balance1 = await tokenInst.balanceOf.call( accounts[0] );
         console.log(web3.utils.fromWei( balance1 , "ether" ) );
         console.log("==========================================");
-        
+       
+
+
+
         console.log(`$ ECR20 : ballanceOf(${ accounts[1] }) ->`);
         let balance2 = await tokenInst.balanceOf.call( accounts[1] );
         console.log(web3.utils.fromWei( balance2 , "ether" ) );
@@ -113,12 +127,12 @@ const testECR20 = it("should test the token", async (  ) => {
 
 
         console.log(`$ ECR20 : transfer(${ accounts[1] } , ${ web3.utils.toWei("100.5","ether") }) ->`);
-        r = await tokenInst.transfer( accounts[1] , web3.utils.toWei("1000.5","ether") ); //Works because default account is token owner
+        r = await tokenInst.transfer( accounts[1] , web3.utils.toWei("100.5","ether") ); //Works because default account is token owner
         console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
         console.log("==========================================");
   
-        console.log(`$ ECR20 : transfer(${ accounts[4] } , ${ web3.utils.toWei("5000.5","ether") }) ->`);
-        r = await tokenInst.transfer( accounts[4] , web3.utils.toWei("5000.5","ether") ); //Works because default account is token owner
+        console.log(`$ ECR20 : transfer(${ accounts[4] } , ${ web3.utils.toWei("100.5","ether") }) ->`);
+        r = await tokenInst.transfer( accounts[4] , web3.utils.toWei("100.5","ether") ); //Works because default account is token owner
         console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
         console.log("==========================================");
 

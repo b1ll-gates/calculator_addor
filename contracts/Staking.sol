@@ -76,12 +76,22 @@ contract Staking is IERC721Receiver, Ownable {
         return staked;
     }
 
-    function stakeTokenRewards( uint256 _stakeId ) public virtual returns ( uint256 ) {
+    function stakeTokenRewards( uint256 _stakeId ) public view returns ( uint256 ) {
           require( contractIsApproved( stakeIdToStake[ _stakeId ].nftContract ) , "No token staked");
           uint256 t = block.timestamp.sub( stakeIdToStake[ _stakeId ].start ).add( stakeIdToStake[ _stakeId ].accumulatedRewards );
           return t.mul( _rewardsRate );
     }
     
+    function stakeRewards( address addr ) external view returns ( uint256 ) {
+          uint256 total = 0;
+          for ( uint256 i = 0; i < addressToStakingIds[ addr ].length; i++ ){
+            total =  total.add( block.timestamp.sub( stakeIdToStake[ addressToStakingIds[ addr ][ i ] ].start )
+                            .add( stakeIdToStake[ addressToStakingIds[ addr ][ i ] ].accumulatedRewards ) );
+          }
+          return total;
+    }
+
+ 
     function stakeRenew( uint256 _stakeId ) public virtual {
         require( contractIsApproved( stakeIdToStake[ _stakeId ].nftContract ) , "No token staked");
         require( block.timestamp.sub( stakeIdToStake[ _stakeId ].start ) > _stakePeriod, "Stake period has not ended");
@@ -113,11 +123,12 @@ contract Staking is IERC721Receiver, Ownable {
         
         Stake storage _stake = stakeIdToStake[ _stakeId ];
         uint256 valueTotal  =  ( block.timestamp.sub( _stake.start ) > _stakePeriod ) ? 0 : _stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
-        valueTotal = 2; _stake.accumulatedRewards.add( valueTotal.mul( _rewardsRate ) );
+        valueTotal = _stake.accumulatedRewards.add( valueTotal.mul( _rewardsRate ) );
             
         _stake.nftContract.safeTransferFrom(address(this), msg.sender, _stake.tokenId);
         
         require(_nwBTCToken.approve(address(this),valueTotal ) ,"Approval Failed");
+        require(_nwBTCToken.balanceOf( address(this) ) > valueTotal, "The liquidity is not great enough at this time");
         //_nwBTCToken.allowance(address(this) , payable(_stake.owner));
         require(_nwBTCToken.transferFrom(address(this),payable(_stake.owner),valueTotal ) ,"transfer Failed");
 

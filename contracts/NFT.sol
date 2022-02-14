@@ -8,9 +8,10 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./NwBTCNFT.sol";
 import "./NFTLibrary.sol";
 
-contract NFT is ERC721,  Ownable, ReentrancyGuard {
+contract NFT is ERC721, NwBTCNFT, Ownable, ReentrancyGuard {
 
 
     struct Body {
@@ -40,24 +41,24 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
     mapping(uint256 => Body) public indexToBodyType;
     mapping(uint256 => bool) hashToMinted;
     mapping(uint256 => uint256) tokenIdToHash;
+    mapping(address => bool) public airdrop;
     //uint256s
     uint256 MAX_SUPPLY = 0xFFFFFFFFFF;
 
     uint8 public _userCreatedOffset = 1;
     
+    function setAirdrop( address addr ) external {
+        airdrop[ addr ] = true;
+    }
+    
+    function getAirdrop( address addr ) external returns(bool) {
+        return airdrop[ addr ];
+    }
+    
     constructor( IERC20 _token  ) ERC721("NFTs ", "NFTS") {
-        _nwBTCToken = _token;
-    
+        _nwBTCToken = _token;    
     }
     
-    function getRating( uint256 _tkn ) external returns ( uint256 ) {
-        uint256 h = tokenIdToHash[ _tkn ];
-        return (  h >> 24 ) & 0xFFFFFF;
-    }
-
-
-   
-
     /**
      * @dev Returns the SVG and metadata for a token Id
      * @param _tokenId The tokenId to return the SVG and metadata for.
@@ -171,8 +172,9 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
      * @param _wallet The wallet to get the tokens of.
      */
     function walletOfOwner(address _wallet)
-        public
+        external
         view
+        override
         returns (uint256[] memory ) 
     {
         uint256 tokenCount = balanceOf(_wallet);
@@ -227,28 +229,35 @@ contract NFT is ERC721,  Ownable, ReentrancyGuard {
         return _bodyCount.current();
     }
 
-    uint256 public _price = 120000000000000000;
+    uint256 public _price = 12000000000000000000;
 
    function setPrice( uint256 v) external onlyOwner {
         _price = v;
     }
+    
+    function getPrice() external override returns(uint256){
+        return _price;
+    }
 
-    function mintsLeft() external view returns (uint256){
-        return ( indexToBodyType[ _bodyCount.current() ].start + indexToBodyType[_bodyCount.current()].amount ) - _tokenIds.current();
-            
+    function canMint() external override returns (bool){
+        return ( 0 < (( indexToBodyType[ _bodyCount.current() ].start + indexToBodyType[_bodyCount.current()].amount ) - _tokenIds.current()));
     }
 
     function mint()
         public
-        payable
+        override
         nonReentrant
     {
         require( ( indexToBodyType[ _bodyCount.current() ].start + indexToBodyType[ _bodyCount.current() ].amount )  > (_tokenIds.current() + 1) , "Season has ended");
         require(_bodyCount.current() > 0, "No default art");
         //require(msg.value >= _price, "Not enough tokens");
         
-        require( _nwBTCToken.allowance( msg.sender, address(this) ) >= _price,"Insuficient Allowance");
-        require(_nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price),"transfer Failed");
+        if ( airdrop[ msg.sender ] ) airdrop[ msg.sender ] = false;
+        else {
+            require( _nwBTCToken.allowance( msg.sender, address(this) ) >= _price,"Insuficient Allowance");
+            require(_nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price),"transfer Failed");
+ 
+        }
 
         _tokenIds.increment();
         uint256 thisTokenId = _tokenIds.current();

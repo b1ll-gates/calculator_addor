@@ -133,7 +133,9 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         uint256 _taxAmount;
         Auction storage details = auctionDetails[ _auctionId ];
         require( details.buyNow > 0 && details.winningBidder == address(0),"Auction must be set as buy now");
+        require( _nwBTCToken.balanceOf( msg.sender ) >= details.buyNow,"Insufficient Balance");
         require( _nwBTCToken.allowance( msg.sender, address(this) ) >= details.buyNow,"Insuficient Allowance");
+
         _taxAmount = details.buyNow.mul( _tax).div( 100 ); 
         uint256 _amount = details.buyNow.sub( _taxAmount );
         if ( _stakeLiquidity != address( 0 ) ) {
