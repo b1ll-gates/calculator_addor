@@ -146,9 +146,9 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         require(_nwBTCToken.transferFrom(msg.sender,details.seller,_amount),"transfer Failed");
 
         details.nftContract.safeTransferFrom(address(this), msg.sender, details.tokenId);
-        _deleteAuction( _auctionId );
 
         emit MarketTransaction("buy", msg.sender, IERC721( details.nftContract ) , _auctionId, details.tokenId );
+        _deleteAuction( _auctionId );
     }
 
     function payForWonAuction( uint256 _auctionID )
@@ -173,10 +173,10 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         require(_nwBTCToken.transferFrom(msg.sender,details.seller,_amount),"transfer Failed");
 
         details.nftContract.safeTransferFrom(address(this), msg.sender, details.tokenId);
-        _deleteAuction( _auctionID );
 
         emit MarketTransaction("buy", msg.sender, IERC721( details.nftContract ), _auctionID, details.tokenId);
 
+        _deleteAuction( _auctionID );
      }
 
     function setBid( uint256 _auctionID , uint256 _bidAmount) external {

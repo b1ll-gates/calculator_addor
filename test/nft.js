@@ -209,7 +209,8 @@ const testECR20 = it("should test the token", async (  ) => {
 
         r = await tokenInst.approve( nftInst.address , web3.utils.toWei("100","ether") , {from:accounts[1]});
         console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        r = await tokenInst.allowance.call(accounts[1] , nftInst.address );
+        
+         r = await tokenInst.allowance.call(accounts[1] , nftInst.address );
         console.log(JSON.stringify( web3.utils.fromWei( r , "ether") , null , 2 ) );
         
         console.log(`$ NFT: mint() ->`);

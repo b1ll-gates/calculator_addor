@@ -42,10 +42,6 @@ contract NFT is ERC721, NwBTCNFT, Ownable, ReentrancyGuard {
     mapping(uint256 => bool) hashToMinted;
     mapping(uint256 => uint256) tokenIdToHash;
     mapping(address => bool) public airdrop;
-    //uint256s
-    uint256 MAX_SUPPLY = 0xFFFFFFFFFF;
-
-    uint8 public _userCreatedOffset = 1;
     
     function setAirdrop( address addr ) external {
         airdrop[ addr ] = true;
@@ -250,14 +246,12 @@ contract NFT is ERC721, NwBTCNFT, Ownable, ReentrancyGuard {
     {
         require( ( indexToBodyType[ _bodyCount.current() ].start + indexToBodyType[ _bodyCount.current() ].amount )  > (_tokenIds.current() + 1) , "Season has ended");
         require(_bodyCount.current() > 0, "No default art");
-        //require(msg.value >= _price, "Not enough tokens");
         
-        if ( airdrop[ msg.sender ] ) airdrop[ msg.sender ] = false;
-        else {
-            require( _nwBTCToken.allowance( msg.sender, address(this) ) >= _price,"Insuficient Allowance");
-            require(_nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price),"transfer Failed");
- 
-        }
+         if ( airdrop[ msg.sender ] ) airdrop[ msg.sender ] = false;
+         else {
+            if ( _nwBTCToken.allowance( msg.sender, address(this) ) < _price ) revert( "Insuficient Allowance" );
+            if ( ! _nwBTCToken.transferFrom(msg.sender,_stakeAddress,_price) ) revert("transfer Failed");
+         }
 
         _tokenIds.increment();
         uint256 thisTokenId = _tokenIds.current();
@@ -266,7 +260,6 @@ contract NFT is ERC721, NwBTCNFT, Ownable, ReentrancyGuard {
         
         hashToMinted[ tokenIdToHash[thisTokenId] ] = true;
         _mint(msg.sender, thisTokenId);
-        //emits: Transfer(from,to,tokenID)
     }
 
 

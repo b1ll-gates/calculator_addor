@@ -3,6 +3,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract Staking is IERC721Receiver, Ownable {
 
@@ -16,6 +17,9 @@ contract Staking is IERC721Receiver, Ownable {
     mapping( uint256 => Stake ) private stakeIdToStake; 
 
     event StakingTransaction(string TxType, address owner, IERC721 nftContract, uint256 stakeId, uint256 tokenId);
+ 
+    using Counters for Counters.Counter;
+    Counters.Counter private _stakeIds;
     
     struct Stake {
         IERC721 nftContract;
@@ -50,14 +54,14 @@ contract Staking is IERC721Receiver, Ownable {
         
         require( contractIsApproved( IERC721(msg.sender) ) ,"Contract must be approved");
         require( addressToStakingIds[ from ].length <= _maxStaking , "Cannot stake any more");
-        uint256 stakeId = uint256(keccak256(abi.encode((msg.sender), _tokenId)));
+        _stakeIds.increment();
         
         for (uint i = 0; i < addressToStakingIds[ from ].length ; i++ ) {
-            if ( addressToStakingIds[ from ][ i ] == stakeId )
+            if ( addressToStakingIds[ from ][ i ] == _stakeIds.current() )
                 revert("Token is already staked");
         }
         
-        stakeIdToStake[ stakeId ] = Stake({
+        stakeIdToStake[ _stakeIds.current() ] = Stake({
             nftContract : IERC721( msg.sender ),
             owner : from,
             tokenId: _tokenId, 
@@ -65,9 +69,9 @@ contract Staking is IERC721Receiver, Ownable {
             accumulatedRewards : 0
         });
         
-        addressToStakingIds[ from ].push( stakeId );
+        addressToStakingIds[ from ].push( _stakeIds.current() );
          
-        emit StakingTransaction("forStake", from, IERC721( msg.sender ) , stakeId , _tokenId);
+        emit StakingTransaction("forStake", from, IERC721( msg.sender ) , _stakeIds.current() , _tokenId);
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     }
 
@@ -99,6 +103,34 @@ contract Staking is IERC721Receiver, Ownable {
         stakeIdToStake[ _stakeId ].accumulatedRewards = stakeIdToStake[ _stakeId ].accumulatedRewards.add( _stakePeriod.mul(_rewardsRate) );
         stakeIdToStake[ _stakeId ].start = block.timestamp; 
     }
+
+
+    function getStakeDetailsByToken( address addr, IERC721 _nftContract, uint256 _tokenId ) external view returns (
+            uint256 stakeId,
+            uint256 timeRemaining,
+            uint256 accumulatedRewards
+        ){
+        
+        uint256[]  memory _ids = addressToStakingIds[ addr ];
+        for ( uint256 i = 0; i < _ids.length; i++ ) {
+            if ( stakeIdToStake[ _ids[i] ].owner == addr &&
+                stakeIdToStake[ _ids[i] ].nftContract == _nftContract && 
+                stakeIdToStake[ _ids[i] ].tokenId == _tokenId ) {
+                
+                  Stake storage _stake = stakeIdToStake[ _ids[i] ];
+                    uint256 t =  ( block.timestamp.sub( _stake.start ) > _stakePeriod ) ?
+                        0 : _stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
+          return (
+            _ids[i],
+            t,
+            _stake.accumulatedRewards.add( t.mul( _rewardsRate ) )
+        ); 
+            }
+        }
+        revert( "Token is not being staked");
+    }
+ 
+
 
     function getStakeDetails( uint256 _stakeId ) external view returns (
             IERC721 nftContract,
