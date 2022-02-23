@@ -26,7 +26,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     mapping (uint256 => Auction) auctionDetails;
 
     uint256 public auctionTimePeriod = 60*60*24*14;
-    uint256 public maxBidChange = 2 * 10**9 * 10**9;
+    uint256 public maxBidChange = 2 * 10**9 * 10**11;
 
     using Counters for Counters.Counter;
     Counters.Counter private _auctionIds;
@@ -41,14 +41,12 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         uint256 tokenId;
     }
 
-    //event MarketTransaction(string TxType, address owner, uint256 tokenId);
     event MarketTransaction(string TxType, address owner, IERC721 nftContract, uint256 auctionId, uint256 tokenId);
 
     constructor( IERC20 tkn , IERC721 nft ) {
         _nwBTCToken = tkn;
-        addApprovedContract( nft );
+        approvedContracts.push( nft );
         _devWallet = msg.sender;
-       // _stakeLiquidity = payable( _liquidity );
     }
 
     function contractIsApproved( IERC721 _contract ) internal view returns ( bool ) {
@@ -121,7 +119,10 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
     function reNewAuction( uint256 _auctionID ) external {
         require( auctionDetails[ _auctionID ].seller == msg.sender, "You have to own the auction");
-        auctionDetails[ _auctionID ].timestamp = block.timestamp;
+        if ( auctionDetails[ _auctionID ].buyNow == 0 ) { 
+            if ( auctionDetails[ _auctionID ].highestBid == 0 ||  block.timestamp - auctionDetails[ _auctionID ].timestamp >  2*auctionTimePeriod ) auctionDetails[ _auctionID ].timestamp = block.timestamp;
+            else revert("Cannot renew an auction before its end, if there is a bid");
+        } else revert("Sale is set to buy now");
     }
 
     ////////////////////////////////////////////////////////////BUYER FUNCTIONS
@@ -181,8 +182,11 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
     function setBid( uint256 _auctionID , uint256 _bidAmount) external {
         require( auctionDetails[ _auctionID ].seller != msg.sender, "You cannot own the auction item");
+
         require( auctionDetails[ _auctionID ].seller != msg.sender, "You cannot own the auction item");
+
         require( auctionDetails[ _auctionID ].highestBid < _bidAmount, "You must place a higher bid");
+
         require( auctionDetails[ _auctionID ].highestBid + maxBidChange >= _bidAmount, "You cannot exceed the max bid change");
         auctionDetails[ _auctionID ].highestBid = _bidAmount;
         auctionDetails[ _auctionID ].winningBidder = msg.sender;
@@ -201,14 +205,14 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         uint256 tokenId
          ) {
 
-            Auction storage action = auctionDetails[_auctionID];
+            Auction storage _auction = auctionDetails[_auctionID];
             return (
-                    action.nftContract,
-                    action.seller,
-                    action.highestBid,
-                    action.buyNow,
-                    action.timestamp,
-                    action.tokenId
+                    _auction.nftContract,
+                    _auction.seller,
+                    _auction.highestBid,
+                    _auction.buyNow,
+                    _auction.timestamp,
+                    _auction.tokenId
                    );
         }
 
@@ -223,13 +227,13 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             for (uint256 i = 0; i < auctionIds.length; i++) {
                 if( auctionDetails[ auctionIds[ i ] ].nftContract == IERC721(_contract) 
                     && auctionDetails[ auctionIds[ i ] ].tokenId == _tokenId ){
-                        Auction storage action = auctionDetails[ auctionIds[ i ] ];
+                        Auction storage _auction = auctionDetails[ auctionIds[ i ] ];
                         return (
                             i,
-                            action.seller,
-                            action.highestBid,
-                            action.buyNow,
-                            action.timestamp
+                            _auction.seller,
+                            _auction.highestBid,
+                            _auction.buyNow,
+                            _auction.timestamp
                         );
                 }
             }
@@ -306,11 +310,13 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
     ////////////////////////////////////////////////////////////OWNER FUNCTIONS
 
-    function addApprovedContract( IERC721 _contract ) public onlyOwner {
+    function addApprovedContract( IERC721 _contract ) public {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         approvedContracts.push( _contract );
     }
 
-    function rmvApprovedContract( IERC721 _contract ) external onlyOwner {
+    function rmvApprovedContract( IERC721 _contract ) external {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         require( approvedContracts.length > 0,"No approved contracts");
         for ( uint256 i = 0; i < approvedContracts.length ; i++ ) {
             if ( approvedContracts[ i ] == _contract ) {
@@ -320,19 +326,33 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         }
     }
 
-    function setDevWallet( address payable _addr ) external onlyOwner {
+    function setDevWallet( address payable _addr ) external {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         _devWallet = _addr;
     }
 
-    function setStakeLiquidity( address payable _addr ) external onlyOwner {
+    function setStakeLiquidity( address payable _addr ) external {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         _stakeLiquidity = _addr;
     }
 
-    function setToken( IERC20 _tkn) external onlyOwner {
+    function setToken( IERC20 _tkn) external {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         _nwBTCToken = _tkn;
     }
 
-    function setTax( uint8 _t ) external onlyOwner {
+    function setMaxBidChange( uint256 v ) external {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
+        maxBidChange = v;        
+    }
+
+    function setAuctionTimePeriod( uint256 t ) external {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
+        auctionTimePeriod = t;
+    }
+
+    function setTax( uint8 _t ) external {
+        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         _tax = _t;
     }
 

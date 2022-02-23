@@ -1,5 +1,5 @@
 //const ERC20 = artifacts.require("./ERC20.sol");
-const NFT = artifacts.require("./NFT.sol");
+const NFT = artifacts.require("NFT");
 const Token = artifacts.require("NwBTC");
 const Market = artifacts.require("Market");
 const Staking = artifacts.require("Staking");
@@ -207,6 +207,20 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log(JSON.stringify(  r , null , 2 ) );
         console.log("==========================================");
 
+
+        console.log(`$ NFT: set Airdrop ->`);
+        r = await nftInst.setAirdrop( accounts[2] , { from : accounts[0] } );
+        console.log(JSON.stringify(  r , null , 2 ) );
+        console.log("==========================================");
+
+
+        console.log(`$ NFT: mint() ->`);
+        r = await nftInst.mint( { from: accounts[2] } ); 
+        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
+
+
+
         r = await tokenInst.approve( nftInst.address , web3.utils.toWei("100","ether") , {from:accounts[1]});
         console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
         
@@ -359,10 +373,10 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
         
-        console.log(`$ MARKET: reNewAuction( ${ _auctionID } ) ->`);
-        r = await marketInst.reNewAuction( _auctionID, {from:accounts[4]} ); 
-        console.log(JSON.stringify(  r, null , 2 ) );
-        console.log("==========================================");
+     //   console.log(`$ MARKET: reNewAuction( ${ _auctionID } ) ->`);
+     //   r = await marketInst.reNewAuction( _auctionID, {from:accounts[4]} ); 
+     //   console.log(JSON.stringify(  r, null , 2 ) );
+     //   console.log("==========================================");
         
         console.log(`$ MARKET: getAuction( ${ _auctionID } ) ->`);
         r = await marketInst.getAuction.call( _auctionID ); 
@@ -447,10 +461,14 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
+        console.log(`$ STAKING: getStakeDetailsByToken( ${ accounts[4] } , ${ nftInst.address  } , ${ 1 } ) ->`);
+        r = await stakeInst.getStakeDetailsByToken.call( accounts[4] , nftInst.address ,  1 , {from:accounts[4] } ); 
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
 
         console.log(`$ STAKING: stakeClaimRewards( ${ stakeId } ) ->`);
         r = await stakeInst.stakeClaimRewards( stakeId , {from:accounts[4]} ); 
-        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log(JSON.stringify(  r['receipt'].logs[0]['args'], null , 2 ) );
         console.log("==========================================");
 
         console.log(`$ ECR20 : ballanceOf(${ accounts[4] }) ->`);
@@ -458,11 +476,8 @@ const testECR20 = it("should test the token", async (  ) => {
         console.log(web3.utils.fromWei( r , "ether" ) );
         console.log("==========================================");
 
-
-
     });
 });
-
 
 var sleep = (delay) => new Promise( (resolve) => setTimeout( resolve, delay));
 

@@ -1,3 +1,5 @@
+pragma solidity >=0.6.0 <0.8.11;
+
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -9,7 +11,7 @@ contract Staking is IERC721Receiver, Ownable {
 
     using SafeMath for uint256;
     
-    uint256 public _rewardsRate = 1;
+    uint256 public _rewardsRate = 100000;
     uint256 public _maxStaking = 5;
     uint256 public _stakePeriod = 60*60*24*7;
     
@@ -35,7 +37,7 @@ contract Staking is IERC721Receiver, Ownable {
 
     constructor( IERC20 tkn , IERC721 nft ) {
         _nwBTCToken = tkn;
-        addApprovedContract( nft );
+        approvedContracts.push( nft );
     }
 
     function contractIsApproved( IERC721 _contract ) internal view returns ( bool ) {
@@ -82,28 +84,27 @@ contract Staking is IERC721Receiver, Ownable {
 
     function stakeTokenRewards( uint256 _stakeId ) public view returns ( uint256 ) {
           require( contractIsApproved( stakeIdToStake[ _stakeId ].nftContract ) , "No token staked");
-          uint256 t = block.timestamp.sub( stakeIdToStake[ _stakeId ].start ).add( stakeIdToStake[ _stakeId ].accumulatedRewards );
-          return t.mul( _rewardsRate );
+          uint256 valueTotal  =  ( block.timestamp.sub( stakeIdToStake[ _stakeId ].start ) > _stakePeriod )
+            ? _stakePeriod : block.timestamp.sub( stakeIdToStake[ _stakeId ].start );
+          valueTotal = stakeIdToStake[ _stakeId ].accumulatedRewards.add( valueTotal.mul( _rewardsRate ) );
+          return valueTotal; 
     }
     
     function stakeRewards( address addr ) external view returns ( uint256 ) {
           uint256 total = 0;
           for ( uint256 i = 0; i < addressToStakingIds[ addr ].length; i++ ){
-            total =  total.add( block.timestamp.sub( stakeIdToStake[ addressToStakingIds[ addr ][ i ] ].start )
-                            .add( stakeIdToStake[ addressToStakingIds[ addr ][ i ] ].accumulatedRewards ) );
+            total = total.add( stakeTokenRewards( addressToStakingIds[ addr ][ i ] ) );
           }
           return total;
     }
-
  
-    function stakeRenew( uint256 _stakeId ) public virtual {
+    function stakeRenew( uint256 _stakeId ) external {
         require( contractIsApproved( stakeIdToStake[ _stakeId ].nftContract ) , "No token staked");
         require( block.timestamp.sub( stakeIdToStake[ _stakeId ].start ) > _stakePeriod, "Stake period has not ended");
         require( msg.sender == stakeIdToStake[ _stakeId ].owner, "Must own the staked token");
         stakeIdToStake[ _stakeId ].accumulatedRewards = stakeIdToStake[ _stakeId ].accumulatedRewards.add( _stakePeriod.mul(_rewardsRate) );
         stakeIdToStake[ _stakeId ].start = block.timestamp; 
     }
-
 
     function getStakeDetailsByToken( address addr, IERC721 _nftContract, uint256 _tokenId ) external view returns (
             uint256 stakeId,
@@ -131,7 +132,6 @@ contract Staking is IERC721Receiver, Ownable {
     }
  
 
-
     function getStakeDetails( uint256 _stakeId ) external view returns (
             IERC721 nftContract,
             uint256 tokenId,
@@ -150,7 +150,7 @@ contract Staking is IERC721Receiver, Ownable {
     }
     
 
-    function stakeClaimRewards( uint256 _stakeId ) public virtual returns ( uint256 ) {
+    function stakeClaimRewards( uint256 _stakeId ) external returns ( uint256 ) {
         require( msg.sender == stakeIdToStake[ _stakeId ].owner, "Must own the staked token");
         
         Stake storage _stake = stakeIdToStake[ _stakeId ];
@@ -172,19 +172,19 @@ contract Staking is IERC721Receiver, Ownable {
             }
         }
  
-        delete stakeIdToStake[ _stakeId ];
-
         emit StakingTransaction("endStake", _stake.owner, _stake.nftContract , _stakeId , _stake.tokenId);
+        delete stakeIdToStake[ _stakeId ];
         return valueTotal;
     }
   ////////////////////////////////////////////////////////////OWNER FUNCTIONS
-    //TODO: change to onlyDev
 
-    function addApprovedContract( IERC721 _contract ) public onlyOwner {
+    function addApprovedContract( IERC721 _contract ) external {
+        require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
         approvedContracts.push( _contract );
     }
 
-    function rmvApprovedContract( IERC721 _contract ) external onlyOwner {
+    function rmvApprovedContract( IERC721 _contract ) external {
+        require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
         require( approvedContracts.length > 0,"No approved contracts");
         for ( uint256 i = 0; i < approvedContracts.length ; i++ ) {
             if ( approvedContracts[ i ] == _contract ) {
@@ -194,21 +194,31 @@ contract Staking is IERC721Receiver, Ownable {
         }
     }
 
-    function setToken( IERC20 _tkn) external onlyOwner {
+    address devAddress;
+
+    function setDevAddress( address addr ) external {
+        require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
+        devAddress = addr;
+    }
+
+    function setToken( IERC20 _tkn) external {
+        require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
         _nwBTCToken = _tkn;
     }
 
-    function stakeSetMaxStaking( uint256 v ) public virtual onlyOwner() {
+    function setMaxStaking( uint256 v ) external {
+        require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
         _maxStaking = v;
     }
 
-    function stakeSetRewardsRate( uint256 r ) public virtual onlyOwner() {
+    function setPeriod( uint256 t ) external {
+        require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
+        _stakePeriod = t;
+    }
+
+    function setRewardsRate( uint256 r ) external {
+        require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
         _rewardsRate = r;
     } 
-    
-
-
-
-
 
 }
