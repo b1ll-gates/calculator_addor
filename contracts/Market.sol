@@ -15,18 +15,18 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
 
     address payable private _devWallet;
+    address payable private _marketWallet;
     address public _stakeLiquidity = address( 0 );
 
     uint8 private _tax = 1;
 
-    IERC20 private _nwBTCToken;
     IERC721[] public approvedContracts;
     uint256[] auctionIds;
 
     mapping (uint256 => Auction) auctionDetails;
 
     uint256 public auctionTimePeriod = 60*60*24*14;
-    uint256 public maxBidChange = 2 * 10**9 * 10**11;
+    uint256 public maxBidChange = 200000000000000000000;
 
     using Counters for Counters.Counter;
     Counters.Counter private _auctionIds;
@@ -43,8 +43,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
     event MarketTransaction(string TxType, address owner, IERC721 nftContract, uint256 auctionId, uint256 tokenId);
 
-    constructor( IERC20 tkn , IERC721 nft ) {
-        _nwBTCToken = tkn;
+    constructor( IERC721 nft ) {
         approvedContracts.push( nft );
         _devWallet = msg.sender;
     }
@@ -77,7 +76,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         ) external override returns(bytes4) {
         
         require( contractIsApproved( IERC721(msg.sender) ) ,"Contract must be approved");
-        //uint256 auctionId = uint256(keccak256(abi.encode((msg.sender), tokenId)));
         _auctionIds.increment();
 
         auctionDetails[ _auctionIds.current()  ] = Auction({
@@ -128,23 +126,25 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     ////////////////////////////////////////////////////////////BUYER FUNCTIONS
     function payNow( uint256 _auctionId )
         external
+        payable
         nonReentrant
     {
 
         uint256 _taxAmount;
         Auction storage details = auctionDetails[ _auctionId ];
         require( details.buyNow > 0 && details.winningBidder == address(0),"Auction must be set as buy now");
-        require( _nwBTCToken.balanceOf( msg.sender ) >= details.buyNow,"Insufficient Balance");
-        require( _nwBTCToken.allowance( msg.sender, address(this) ) >= details.buyNow,"Insuficient Allowance");
+        require( msg.value >= details.buyNow,"Insufficient amount");
+        //require( _nwBTCToken.allowance( msg.sender, address(this) ) >= details.buyNow,"Insuficient Allowance");
 
         _taxAmount = details.buyNow.mul( _tax).div( 100 ); 
         uint256 _amount = details.buyNow.sub( _taxAmount );
-        if ( _stakeLiquidity != address( 0 ) ) {
+        if ( _marketWallet != address( 0 ) ) {
             _amount = _amount.sub( _taxAmount );
-            require(_nwBTCToken.transferFrom(msg.sender,_stakeLiquidity,_taxAmount),"transfer Failed");
-        }        
-        require(_nwBTCToken.transferFrom(msg.sender,_devWallet,_taxAmount),"transfer Failed");
-        require(_nwBTCToken.transferFrom(msg.sender,details.seller,_amount),"transfer Failed");
+            _marketWallet.transfer( _taxAmount );
+        }
+     
+        _devWallet.transfer(_taxAmount);
+        payable( details.seller ).transfer(_amount);
 
         details.nftContract.safeTransferFrom(address(this), msg.sender, details.tokenId);
 
@@ -154,6 +154,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
     function payForWonAuction( uint256 _auctionID )
         external
+        payable
         nonReentrant
     {
 
@@ -162,16 +163,16 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
 
         require( (block.timestamp - details.timestamp ) > auctionTimePeriod , "Auction must be over");
         require(  details.winningBidder == msg.sender,"You must be the aution winner");
-        require( _nwBTCToken.allowance( msg.sender, address(this) ) >= details.highestBid,"Insuficient Allowance");
+        require( msg.value >= details.highestBid,"Insuficient Amount");
 
         _taxAmount = details.highestBid.mul( _tax).div( 100 ); 
         uint256 _amount = details.highestBid.sub( _taxAmount );
         if ( _stakeLiquidity != address( 0 ) ) {
             _amount = _amount.sub( _taxAmount );
-            require(_nwBTCToken.transferFrom(msg.sender,_stakeLiquidity,_taxAmount),"transfer Failed");
+            _marketWallet.transfer( _taxAmount );
         }        
-        require(_nwBTCToken.transferFrom(msg.sender,_devWallet,_taxAmount),"transfer Failed");
-        require(_nwBTCToken.transferFrom(msg.sender,details.seller,_amount),"transfer Failed");
+        _devWallet.transfer( _taxAmount );
+        payable( details.seller ).transfer( _amount );
 
         details.nftContract.safeTransferFrom(address(this), msg.sender, details.tokenId);
 
@@ -229,7 +230,7 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
                     && auctionDetails[ auctionIds[ i ] ].tokenId == _tokenId ){
                         Auction storage _auction = auctionDetails[ auctionIds[ i ] ];
                         return (
-                            i,
+                            auctionIds[ i ],
                             _auction.seller,
                             _auction.highestBid,
                             _auction.buyNow,
@@ -331,14 +332,9 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         _devWallet = _addr;
     }
 
-    function setStakeLiquidity( address payable _addr ) external {
+    function setMarketWallet( address payable _addr ) external {
         require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         _stakeLiquidity = _addr;
-    }
-
-    function setToken( IERC20 _tkn) external {
-        require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
-        _nwBTCToken = _tkn;
     }
 
     function setMaxBidChange( uint256 v ) external {
@@ -355,7 +351,6 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         require( owner() == _msgSender() || _devWallet == _msgSender(),"Must be owner or dev");
         _tax = _t;
     }
-
 }
 
 

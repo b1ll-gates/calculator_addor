@@ -11,9 +11,9 @@ contract Staking is IERC721Receiver, Ownable {
 
     using SafeMath for uint256;
     
-    uint256 public _rewardsRate = 100000;
-    uint256 public _maxStaking = 5;
-    uint256 public _stakePeriod = 60*60*24*7;
+    uint256 public rewardsRate = 100000;
+    uint256 public maxStaking = 5;
+    uint256 public stakePeriod = 60*60*24*7;
     
     mapping( address => uint256[] ) private addressToStakingIds;
     mapping( uint256 => Stake ) private stakeIdToStake; 
@@ -54,8 +54,9 @@ contract Staking is IERC721Receiver, Ownable {
             bytes calldata
         ) external override returns(bytes4) {
         
+        require( maxStaking > 0,"Staking is not enabled");
         require( contractIsApproved( IERC721(msg.sender) ) ,"Contract must be approved");
-        require( addressToStakingIds[ from ].length <= _maxStaking , "Cannot stake any more");
+        require( addressToStakingIds[ from ].length <= maxStaking , "Cannot stake any more");
         _stakeIds.increment();
         
         for (uint i = 0; i < addressToStakingIds[ from ].length ; i++ ) {
@@ -84,9 +85,9 @@ contract Staking is IERC721Receiver, Ownable {
 
     function stakeTokenRewards( uint256 _stakeId ) public view returns ( uint256 ) {
           require( contractIsApproved( stakeIdToStake[ _stakeId ].nftContract ) , "No token staked");
-          uint256 valueTotal  =  ( block.timestamp.sub( stakeIdToStake[ _stakeId ].start ) > _stakePeriod )
-            ? _stakePeriod : block.timestamp.sub( stakeIdToStake[ _stakeId ].start );
-          valueTotal = stakeIdToStake[ _stakeId ].accumulatedRewards.add( valueTotal.mul( _rewardsRate ) );
+          uint256 valueTotal  =  ( block.timestamp.sub( stakeIdToStake[ _stakeId ].start ) > stakePeriod )
+            ? stakePeriod : block.timestamp.sub( stakeIdToStake[ _stakeId ].start );
+          valueTotal = stakeIdToStake[ _stakeId ].accumulatedRewards.add( valueTotal.mul( rewardsRate ) );
           return valueTotal; 
     }
     
@@ -100,9 +101,9 @@ contract Staking is IERC721Receiver, Ownable {
  
     function stakeRenew( uint256 _stakeId ) external {
         require( contractIsApproved( stakeIdToStake[ _stakeId ].nftContract ) , "No token staked");
-        require( block.timestamp.sub( stakeIdToStake[ _stakeId ].start ) > _stakePeriod, "Stake period has not ended");
+        require( block.timestamp.sub( stakeIdToStake[ _stakeId ].start ) > stakePeriod, "Stake period has not ended");
         require( msg.sender == stakeIdToStake[ _stakeId ].owner, "Must own the staked token");
-        stakeIdToStake[ _stakeId ].accumulatedRewards = stakeIdToStake[ _stakeId ].accumulatedRewards.add( _stakePeriod.mul(_rewardsRate) );
+        stakeIdToStake[ _stakeId ].accumulatedRewards = stakeIdToStake[ _stakeId ].accumulatedRewards.add( stakePeriod.mul( rewardsRate) );
         stakeIdToStake[ _stakeId ].start = block.timestamp; 
     }
 
@@ -119,12 +120,12 @@ contract Staking is IERC721Receiver, Ownable {
                 stakeIdToStake[ _ids[i] ].tokenId == _tokenId ) {
                 
                   Stake storage _stake = stakeIdToStake[ _ids[i] ];
-                    uint256 t =  ( block.timestamp.sub( _stake.start ) > _stakePeriod ) ?
-                        0 : _stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
+                    uint256 t =  ( block.timestamp.sub( _stake.start ) > stakePeriod ) ?
+                        0 : stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
           return (
             _ids[i],
             t,
-            _stake.accumulatedRewards.add( t.mul( _rewardsRate ) )
+            _stake.accumulatedRewards.add( t.mul( rewardsRate ) )
         ); 
             }
         }
@@ -139,13 +140,13 @@ contract Staking is IERC721Receiver, Ownable {
             uint256 accumulatedRewards
         ){
         Stake storage _stake = stakeIdToStake[ _stakeId ];
-        uint256 t =  ( block.timestamp.sub( _stake.start ) > _stakePeriod ) ?
-                0 : _stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
+        uint256 t =  ( block.timestamp.sub( _stake.start ) > stakePeriod ) ?
+                0 : stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
           return (
             _stake.nftContract,
             _stake.tokenId,
             t,
-            _stake.accumulatedRewards.add( t.mul( _rewardsRate ) )
+            _stake.accumulatedRewards.add( t.mul( rewardsRate ) )
         );        
     }
     
@@ -154,8 +155,8 @@ contract Staking is IERC721Receiver, Ownable {
         require( msg.sender == stakeIdToStake[ _stakeId ].owner, "Must own the staked token");
         
         Stake storage _stake = stakeIdToStake[ _stakeId ];
-        uint256 valueTotal  =  ( block.timestamp.sub( _stake.start ) > _stakePeriod ) ? 0 : _stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
-        valueTotal = _stake.accumulatedRewards.add( valueTotal.mul( _rewardsRate ) );
+        uint256 valueTotal  =  ( block.timestamp.sub( _stake.start ) > stakePeriod ) ? 0 : stakePeriod.sub(  block.timestamp.sub( _stake.start ) );
+        valueTotal = _stake.accumulatedRewards.add( valueTotal.mul( rewardsRate ) );
             
         _stake.nftContract.safeTransferFrom(address(this), msg.sender, _stake.tokenId);
         
@@ -208,17 +209,17 @@ contract Staking is IERC721Receiver, Ownable {
 
     function setMaxStaking( uint256 v ) external {
         require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
-        _maxStaking = v;
+        maxStaking = v;
     }
 
     function setPeriod( uint256 t ) external {
         require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
-        _stakePeriod = t;
+        stakePeriod = t;
     }
 
     function setRewardsRate( uint256 r ) external {
         require( owner() == _msgSender() || devAddress == _msgSender(),"Must be owner or dev");
-        _rewardsRate = r;
+        rewardsRate = r;
     } 
 
 }
