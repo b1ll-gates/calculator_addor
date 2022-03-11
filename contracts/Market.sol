@@ -105,9 +105,11 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
     {
 
         require( auctionDetails[ _auctionID ].seller == msg.sender, "You have to own the auction");
-        require( block.timestamp - auctionDetails[ _auctionID ].timestamp < auctionTimePeriod
-            || (  block.timestamp - auctionDetails[ _auctionID ].timestamp <  2*auctionTimePeriod
-&& auctionDetails[ _auctionID ].highestBid > 0) , "You can't withdraw a played out action, till auctionPeriod");
+        require( auctionDetails[ _auctionID ].buyNow > 0 ||
+            ( 
+                ( ( block.timestamp - auctionDetails[ _auctionID ].timestamp ) < auctionTimePeriod ||
+                    ( block.timestamp - auctionDetails[ _auctionID ].timestamp ) <  2*auctionTimePeriod )
+            && auctionDetails[ _auctionID ].highestBid > 0 ), "You can't withdraw a played out action, till auctionPeriod");
 
         Auction storage details = auctionDetails[_auctionID];
         details.nftContract.safeTransferFrom(address(this), details.seller, details.tokenId);
@@ -293,17 +295,17 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
             uint256 count = 0;
             uint256 i;
             for (i = 0; i < auctionIds.length; i++) {
-                if(
-                   ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod &&
-                   auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) count++;
+                if ( auctionDetails[ auctionIds[ i ] ].nftContract == _contract &&
+                     ( auctionDetails[ auctionIds[ i ] ].buyNow > 0 || 
+                        ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod ) ) count++;
             }
 
             uint256[] memory result = new uint256[]( count );
             count = 0;
             for (i = 0; i < auctionIds.length; i++) {
-                if(
-                   ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod &&
-                    auctionDetails[ auctionIds[ i ] ].nftContract == _contract ) result[ count++ ] = auctionIds[ i ];
+                if ( auctionDetails[ auctionIds[ i ] ].nftContract == _contract &&
+                    ( auctionDetails[ auctionIds[ i ] ].buyNow > 0 || 
+                        ( block.timestamp - auctionDetails[ auctionIds[ i ] ].timestamp ) < auctionTimePeriod ) ) result[ count++ ] = auctionIds[ i ];
             }
             return result;
         }
