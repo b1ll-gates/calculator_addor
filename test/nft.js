@@ -460,7 +460,6 @@ contract("NFT Pixels", (accounts) => {
 
 
 
-/*      
 
 contract("NFT + Token + Marketplace", (accounts) => {
     //account #0 is the contract owner
@@ -662,13 +661,14 @@ contract("NFT + Token + Marketplace", (accounts) => {
         console.log("++++++++++++++++++++++++++++++++++++++++++");
         console.log("==========================================");
 
-        console.log(`$ NFT: safeTransferFrom( ${ accounts[1]} , ${marketInst.address} , 1 ) ->`);
-        r = await nftInst.safeTransferFrom( accounts[1] , marketInst.address , 1 , { from : accounts[1] }); 
+        let tkn = r[0];
+        console.log(`$ NFT: safeTransferFrom( ${ accounts[1]} , ${marketInst.address} , ${tkn}) ->`);
+        r = await nftInst.safeTransferFrom( accounts[1] , marketInst.address , tkn , { from : accounts[1] }); 
         console.log(JSON.stringify(  r['receipt']['logs'][1]['args'], null , 2 ) );
         console.log("==========================================");
 
-        console.log(`$ MARKET: setStakeLiquidity( ${ accounts[3] } ) ->`);
-        r = await marketInst.setStakeLiquidity( accounts[3] ,{ from: accounts[0] } ); 
+        console.log(`$ MARKET: setMarketWallet( ${ accounts[3] } ) ->`);
+        r = await marketInst.setMarketWallet( accounts[3] ,{ from: accounts[0] } ); 
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
@@ -677,8 +677,8 @@ contract("NFT + Token + Marketplace", (accounts) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
-        console.log(`$ MARKET: getAuctionByToken( ${ nftInst.address  } , i ) ->`);
-        r = await marketInst.getAuctionByToken( nftInst.address , 1 ); 
+        console.log(`$ MARKET: getAuctionByToken( ${ nftInst.address  } , ${tkn} ) ->`);
+        r = await marketInst.getAuctionByToken( nftInst.address , tkn ); 
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
@@ -708,28 +708,9 @@ contract("NFT + Token + Marketplace", (accounts) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
-        console.log(`$ ECR20 : approve(${ marketInst.address } , ${ web3.utils.toWei("0.1","ether") } , {from:${accounts[4]}}) ->`);
-        r = await tokenInst.approve( marketInst.address , web3.utils.toWei("0.1","ether") , {from:accounts[4]});
-        console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
-        console.log(`$ ECR20 : allowance(${ accounts[4] } , ${ marketInst.address} ) ->`);
-        r = await tokenInst.allowance.call(accounts[4] , marketInst.address);
-        console.log(web3.utils.fromWei( r , "ether" ) );
-        console.log("==========================================");
-
-        console.log(`$ ECR20 : ballanceOf(${ accounts[1] }) ->`);
-        r = await tokenInst.balanceOf.call( accounts[4] );
-        console.log(web3.utils.fromWei( r , "ether" ) );
-        console.log("==========================================");
-
         console.log(`$ MARKET: payNow( ${ _auctionID } ) ->`);
-        r = await marketInst.payNow( _auctionID , {from: accounts[4]} ); 
+        r = await marketInst.payNow( _auctionID , {from: accounts[4], value : web3.utils.toWei("0.1","ether") } ); 
         console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
-
-        console.log(`$ ECR20 : ballanceOf(${ accounts[1] }) ->`);
-        r = await tokenInst.balanceOf.call( accounts[4] );
-        console.log(web3.utils.fromWei( r , "ether" ) );
         console.log("==========================================");
 
         console.log(`$ NFT: walletOfOwner( ${ accounts[1] } ) ->`);
@@ -737,8 +718,8 @@ contract("NFT + Token + Marketplace", (accounts) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
-        console.log(`$ NFT: safeTransferFrom( ${ accounts[4]} , ${marketInst.address} , 1 ) ->`);
-        r = await nftInst.safeTransferFrom( accounts[4] , marketInst.address , 1 , { from : accounts[4] }); 
+        console.log(`$ NFT: safeTransferFrom( ${ accounts[4]} , ${marketInst.address} , ${tkn} ) ->`);
+        r = await nftInst.safeTransferFrom( accounts[4] , marketInst.address , tkn , { from : accounts[4] }); 
         console.log(JSON.stringify(  r['receipt']['logs'][1]['args'], null , 2 ) );
         console.log("==========================================");
 
@@ -778,58 +759,46 @@ contract("NFT + Token + Marketplace", (accounts) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
-        console.log(`$ ECR20 : approve(${ marketInst.address } , ${ web3.utils.toWei("2","ether") } , {from:${accounts[4]}}) ->`);
-        r = await tokenInst.approve( marketInst.address , web3.utils.toWei("2","ether") , {from:accounts[2]});
-        console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
-        console.log(`$ ECR20 : allowance(${ accounts[2] } , ${ marketInst.address} ) ->`);
-        r = await tokenInst.allowance.call(accounts[2] , marketInst.address);
-        console.log(web3.utils.fromWei( r , "ether" ) );
-        console.log("==========================================");
-
-        console.log(`$ ECR20 : ballanceOf(${ accounts[1] }) ->`);
-        r = await tokenInst.balanceOf.call( accounts[2] );
-        console.log(web3.utils.fromWei( r , "ether" ) );
-        console.log("==========================================");
-
         
-        //console.log(`$ MARKET: payForWonAuction( ${ _auctionID } ) ->`);
-        //r = await marketInst.payForWonAuction( _auctionID , {from: accounts[2]} ); 
-        //console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        //console.log("==========================================");
+      /*  console.log(`$ MARKET: payForWonAuction( ${ _auctionID } ) ->`);
+        r = await marketInst.payForWonAuction( _auctionID , {from: accounts[2], value: web3.utils.toWei("0.2","ether") } ); 
+        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
 
-        //console.log(`$ ECR20 : ballanceOf(${ accounts[1] }) ->`);
-        //r = await tokenInst.balanceOf.call( accounts[2] );
-        //console.log(web3.utils.fromWei( r , "ether" ) );
-        //console.log("==========================================");
+        console.log(`$ NFT: walletOfOwner( ${ accounts[2] } ) ->`);
+        r = await nftInst.walletOfOwner.call( accounts[2] ); 
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
 
-        //console.log(`$ NFT: walletOfOwner( ${ accounts[2] } ) ->`);
-        //r = await nftInst.walletOfOwner.call( accounts[2] ); 
-        //console.log(JSON.stringify(  r, null , 2 ) );
-        //console.log("==========================================");
+        console.log(`$ NFT: safeTransferFrom( ${ accounts[2]} , ${marketInst.address} , ${tkn} ) ->`);
+        r = await nftInst.safeTransferFrom( accounts[2] , marketInst.address , tkn , { from : accounts[2] }); 
+        console.log(JSON.stringify(  r['receipt']['logs'][1]['args'], null , 2 ) );
+        console.log("==========================================");
 
-        //console.log(`$ NFT: safeTransferFrom( ${ accounts[2]} , ${marketInst.address} , 1 ) ->`);
-        //r = await nftInst.safeTransferFrom( accounts[2] , marketInst.address , 1 , { from : accounts[2] }); 
-        //console.log(JSON.stringify(  r['receipt']['logs'][1]['args'], null , 2 ) );
-        //console.log("==========================================");
+        console.log(`$ MARKET: getAllTokensOnSale( ${ nftInst.address } ) ->`);
+        r = await marketInst.getAllTokensOnSale.call( nftInst.address ); 
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
+        _auctionID = r[0];
+        */
 
-        //console.log(`$ MARKET: getAllTokensOnSale( ${ nftInst.address } ) ->`);
-        //r = await marketInst.getAllTokensOnSale.call( nftInst.address ); 
-        //console.log(JSON.stringify(  r, null , 2 ) );
-        //console.log("==========================================");
-        //_auctionID = r[0];
-         
-        //console.log(`$ MARKET: withdrawAuction( ${ _auctionID } ) ->`);
-        //r = await marketInst.withdrawAuction( _auctionID , {from: accounts[4]} ); 
-        //console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        //console.log("==========================================");
+        console.log(`$ MARKET: setBuyNow( ${ _auctionID } , 0.3  ) ->`);
+        r = await marketInst.setBuyNow( _auctionID , web3.utils.toWei("0.3","ether") , { from: accounts[4] } ); 
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
+
+
+        console.log(`$ MARKET: withdrawAuction( ${ _auctionID } ) ->`);
+        r = await marketInst.withdrawAuction( _auctionID , {from: accounts[4]} ); 
+        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
 
         console.log("==========================================");
         console.log("++++++++++++++++++++++++++++++++++++++++++");
         console.log("==========================================");
 
-        console.log(`$ NFT: safeTransferFrom( ${ accounts[4]} , ${stakeInst.address} , 1 ) ->`);
-        r = await nftInst.safeTransferFrom( accounts[4] , stakeInst.address , 1 , { from : accounts[4] }); 
+        console.log(`$ NFT: safeTransferFrom( ${ accounts[4]} , ${stakeInst.address} , ${tkn} ) ->`);
+        r = await nftInst.safeTransferFrom( accounts[4] , stakeInst.address , tkn , { from : accounts[4] }); 
         console.log(JSON.stringify(  r['receipt']['logs'][1]['args'], null , 2 ) );
         console.log("==========================================");
 
@@ -849,8 +818,8 @@ contract("NFT + Token + Marketplace", (accounts) => {
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
-        console.log(`$ STAKING: getStakeDetailsByToken( ${ accounts[4] } , ${ nftInst.address  } , ${ 1 } ) ->`);
-        r = await stakeInst.getStakeDetailsByToken.call( accounts[4] , nftInst.address ,  1 , {from:accounts[4] } ); 
+        console.log(`$ STAKING: getStakeDetailsByToken( ${ accounts[4] } , ${ nftInst.address  } , ${ tkn } ) ->`);
+        r = await stakeInst.getStakeDetailsByToken.call( accounts[4] , nftInst.address ,  tkn , {from:accounts[4] } ); 
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
 
@@ -867,7 +836,6 @@ contract("NFT + Token + Marketplace", (accounts) => {
     });
 });
 
-*/
 var sleep = (delay) => new Promise( (resolve) => setTimeout( resolve, delay));
 
 var assertAddress = (address) => {

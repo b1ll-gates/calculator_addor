@@ -103,19 +103,16 @@ contract Market is IERC721Receiver, Ownable, ReentrancyGuard {
         external
         nonReentrant
     {
-
         require( auctionDetails[ _auctionID ].seller == msg.sender, "You have to own the auction");
-        require( auctionDetails[ _auctionID ].buyNow > 0 ||
-            ( 
-                ( ( block.timestamp - auctionDetails[ _auctionID ].timestamp ) < auctionTimePeriod ||
-                    ( block.timestamp - auctionDetails[ _auctionID ].timestamp ) <  2*auctionTimePeriod )
-            && auctionDetails[ _auctionID ].highestBid > 0 ), "You can't withdraw a played out action, till auctionPeriod");
-
-        Auction storage details = auctionDetails[_auctionID];
-        details.nftContract.safeTransferFrom(address(this), details.seller, details.tokenId);
-        emit MarketTransaction("endSale", details.seller, IERC721( details.nftContract ), _auctionID, details.tokenId );
-        _deleteAuction( _auctionID );
-    }
+        if ( ( auctionDetails[ _auctionID ].buyNow > 0 ) ||
+            ( auctionDetails[ _auctionID ].highestBid == 0 ) ||
+            ( block.timestamp - auctionDetails[ _auctionID ].timestamp ) > 2 * auctionTimePeriod ) {
+                Auction storage details = auctionDetails[_auctionID];
+                details.nftContract.safeTransferFrom(address(this), details.seller, details.tokenId);
+                emit MarketTransaction("endSale", details.seller, IERC721( details.nftContract ), _auctionID, details.tokenId );
+                _deleteAuction( _auctionID );
+        } else revert("You can't withdraw an auction, if active");
+   }
 
     function reNewAuction( uint256 _auctionID ) external {
         require( auctionDetails[ _auctionID ].seller == msg.sender, "You have to own the auction");
