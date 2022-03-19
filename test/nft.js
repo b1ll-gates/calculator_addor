@@ -41,8 +41,11 @@ const NFT_KING_ARTWORK = [
     "sperm_king_gold.svg"  
 ];
 
+const PRICE = "12000000"
+
 contract("NFT Kings", (accounts) => {
     const test0 = it("should fail to mint because no art or stake address", async (  ) => {
+        console.log("****************************************************************");
         console.log("****************************************************************");
         let r;
         let tokenInst = await Token.deployed();
@@ -70,6 +73,7 @@ contract("NFT Kings", (accounts) => {
     });
 
     const test1 = it("should fail to mint because no stake address", async (  ) => {
+        console.log("****************************************************************");
         console.log("****************************************************************");
         let r;
         let tokenInst = await Token.deployed();
@@ -103,71 +107,6 @@ contract("NFT Kings", (accounts) => {
 
     const test2 = it("should fail to mint after 2 because of season end", async (  ) => {
         console.log("****************************************************************");
-        let r;
-        let tokenInst = await Token.deployed();
-        assertAddress( tokenInst.address );
-        console.log(`TOKEN instance@: ${ tokenInst.address }`);
-
-        let nftInst = await NFT_KINGS.deployed();
-        console.log(`NFT instance@: ${ nftInst.address }`);
-        assertAddress( nftInst.address );
-
-        let stakeInst = await Staking.deployed();
-        assertAddress( stakeInst.address );
-        console.log(`STAKING instance @: ${ stakeInst.address }`);
-        console.log("==========================================");
-
-        console.log(`$ ECR20 : faucet(${ accounts[0] }) ->`);
-        r = await tokenInst.faucet( {from:accounts[0]} );
-        console.log( web3.utils.fromWei( r['receipt']['logs'][0]['args']['value'] , "ether") );
-        console.log("==========================================");
-
-        console.log(`$ ECR20 : approve(${ nftInst.address } , ${ web3.utils.toWei("100","ether") } , {from: ${accounts[0]} }) ->`);
-        r = await tokenInst.approve( nftInst.address , web3.utils.toWei("100","ether") , {from:accounts[0]});
-        console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
-
-        let AMOUNT = 2;
-        console.log(`NFT : setArtWork( ${ AMOUNT } , "Sperm King" , ${ NFT_KING_ARTWORK } ) ->`)
-        r = await nftInst.setArtwork( AMOUNT , "Sperm King" , NFT_KING_ARTWORK );
-        console.log(JSON.stringify(  r, null , 2 ) );
-
-        console.log(`$ NFT: setStakeAddress( ${ stakeInst.address } ) ->`);
-        r = await nftInst.setStakeAddress( stakeInst.address , {from: accounts[0] } ); 
-        console.log(JSON.stringify(  r, null , 2 ) );
-        console.log("==========================================");
-
-        console.log("$ NFT: canMint ->");
-        r = await nftInst.canMint.call( ); 
-        console.log( r );
-        console.log("==========================================");       
-
-        console.log(`$ NFT: mint() ->`);
-        r = await nftInst.mint( { from: accounts[0] } );
-        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
-        console.log("$ NFT: canMint ->");
-        r = await nftInst.canMint.call( ); 
-        console.log( r );
-        console.log("==========================================");       
-
-        console.log(`$ NFT: mint() ->`);
-        r = await nftInst.mint( { from: accounts[0] } ); 
-        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
-
-        console.log("$ NFT: canMint ->");
-        r = await nftInst.canMint.call( ); 
-        console.log( r );
-        console.log("==========================================");       
-
-        console.log(`$ NFT: mint() ->`);
-        r = await nftInst.mint( { from: accounts[0] } ); 
-        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
-    });
-       
-    const test3 = it("should fail to stake, as stake max is set to 0", async (  ) => {
         console.log("****************************************************************");
         let r;
         let tokenInst = await Token.deployed();
@@ -187,8 +126,84 @@ contract("NFT Kings", (accounts) => {
         r = await tokenInst.faucet( {from:accounts[0]} );
         console.log( web3.utils.fromWei( r['receipt']['logs'][0]['args']['value'] , "ether") );
         console.log("==========================================");
-        console.log(`$ ECR20 : approve( ${ nftInst.address } , ${ web3.utils.toWei("100","ether") } , {from:${accounts[0]}}) ->`);
-        r = await tokenInst.approve( nftInst.address, web3.utils.toWei("100","ether") , {from:accounts[0]});
+
+        console.log(`$ ECR20 : approve(${ nftInst.address } , ${ web3.utils.toWei("100000000","ether") } , {from: ${accounts[0]} }) ->`);
+        r = await tokenInst.approve( nftInst.address , web3.utils.toWei("100000000","ether") , {from:accounts[0]});
+        console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
+
+        let AMOUNT = 2;
+        console.log(`NFT : setArtWork( ${ AMOUNT } , "Sperm King" , ${ NFT_KING_ARTWORK } ) ->`)
+        r = await nftInst.setArtwork( AMOUNT , "Sperm King" , NFT_KING_ARTWORK );
+        console.log(JSON.stringify(  r, null , 2 ) );
+
+        console.log(`$ NFT: setStakeAddress( ${ stakeInst.address } ) ->`);
+        r = await nftInst.setStakeAddress( stakeInst.address , {from: accounts[0] } ); 
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
+
+        console.log("$ NFT: canMint ->");
+        r = await nftInst.canMint.call( ); 
+        console.log( r );
+        console.log("==========================================");       
+
+        console.log(`$ NFT: #1 mint() ->`);
+        r = await nftInst.mint( { from: accounts[0] } );
+        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
+
+        let tkn = r['receipt']['logs'][0]['args']['tokenId'];
+        console.log(`$ NFT: tokenIdToHash( ${ tkn } ) ->`);
+        r = await nftInst.tokenIdToHash.call( tkn );
+        console.log(JSON.stringify(  r, null , 2 ) );
+        console.log("==========================================");
+
+        console.log("$ NFT: canMint ->");
+        r = await nftInst.canMint.call( ); 
+        console.log( r );
+        console.log("==========================================");       
+
+        console.log(`$ NFT: #2 mint() ->`);
+        r = await nftInst.mint( { from: accounts[0] } ); 
+        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
+
+
+
+        console.log("$ NFT: canMint ->");
+        r = await nftInst.canMint.call( ); 
+        console.log( r );
+        console.log("==========================================");       
+
+        console.log(`$ NFT: #3 mint() ->`);
+        r = await nftInst.mint( { from: accounts[0] } ); 
+        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
+        console.log("==========================================");
+    });
+      
+    const test3 = it("should fail to stake, as stake max is set to 0", async (  ) => {
+        console.log("****************************************************************");
+        console.log("****************************************************************");
+        let r;
+        let tokenInst = await Token.deployed();
+        assertAddress( tokenInst.address );
+        console.log(`TOKEN instance@: ${ tokenInst.address }`);
+
+        let nftInst = await NFT_KINGS.deployed();
+        console.log(`NFT instance@: ${ nftInst.address }`);
+        assertAddress( nftInst.address );
+
+        let stakeInst = await Staking.deployed();
+        assertAddress( stakeInst.address );
+        console.log(`STAKING instance @: ${ stakeInst.address }`);
+        console.log("==========================================");
+
+        console.log(`$ ECR20 : faucet(${ accounts[0] }) ->`);
+        r = await tokenInst.faucet( {from:accounts[0]} );
+        console.log( web3.utils.fromWei( r['receipt']['logs'][0]['args']['value'] , "ether") );
+        console.log("==========================================");
+        console.log(`$ ECR20 : approve( ${ nftInst.address } , ${ web3.utils.toWei("100000000","ether") } , {from:${accounts[0]}}) ->`);
+        r = await tokenInst.approve( nftInst.address, web3.utils.toWei("100000000","ether") , {from:accounts[0]});
         console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
         console.log("==========================================");
 
@@ -248,8 +263,12 @@ contract("NFT Kings", (accounts) => {
     });
 });
 
+
+
+
 contract("NFT Pixels", (accounts) => {
     const test0 = it("should fail to mint because no art or stake address", async (  ) => {
+        console.log("****************************************************************");
         console.log("****************************************************************");
         let r;
         let tokenInst = await Token.deployed();
@@ -277,6 +296,7 @@ contract("NFT Pixels", (accounts) => {
     });
 
     const test1 = it("should fail to mint because no stake address", async (  ) => {
+        console.log("****************************************************************");
         console.log("****************************************************************");
         let r;
         let tokenInst = await Token.deployed();
@@ -311,6 +331,7 @@ contract("NFT Pixels", (accounts) => {
 
     const test2 = it("should fail to mint after 2 because of season end", async (  ) => {
         console.log("****************************************************************");
+        console.log("****************************************************************");
         let r;
         let tokenInst = await Token.deployed();
         assertAddress( tokenInst.address );
@@ -330,8 +351,8 @@ contract("NFT Pixels", (accounts) => {
         console.log( web3.utils.fromWei( r['receipt']['logs'][0]['args']['value'] , "ether") );
         console.log("==========================================");
 
-        console.log(`$ ECR20 : approve(${ nftInst.address } , ${ web3.utils.toWei("100","ether") } , {from: ${accounts[0]} }) ->`);
-        r = await tokenInst.approve( nftInst.address , web3.utils.toWei("100","ether") , {from:accounts[0]});
+        console.log(`$ ECR20 : approve(${ nftInst.address } , ${ web3.utils.toWei("100000000","ether") } , {from: ${accounts[0]} }) ->`);
+        r = await tokenInst.approve( nftInst.address , web3.utils.toWei("100000000","ether") , {from:accounts[0]});
         console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
         console.log("==========================================");
 
@@ -378,6 +399,7 @@ contract("NFT Pixels", (accounts) => {
        
     const test3 = it("should fail to stake, as stake max is set to 0", async (  ) => {
         console.log("****************************************************************");
+        console.log("****************************************************************");
         let r;
         let tokenInst = await Token.deployed();
         assertAddress( tokenInst.address );
@@ -396,8 +418,8 @@ contract("NFT Pixels", (accounts) => {
         r = await tokenInst.faucet( {from:accounts[0]} );
         console.log( web3.utils.fromWei( r['receipt']['logs'][0]['args']['value'] , "ether") );
         console.log("==========================================");
-        console.log(`$ ECR20 : approve( ${ nftInst.address } , ${ web3.utils.toWei("100","ether") } , {from:${accounts[0]}}) ->`);
-        r = await tokenInst.approve( nftInst.address, web3.utils.toWei("100","ether") , {from:accounts[0]});
+        console.log(`$ ECR20 : approve( ${ nftInst.address } , ${ web3.utils.toWei("100000000","ether") } , {from:${accounts[0]}}) ->`);
+        r = await tokenInst.approve( nftInst.address, web3.utils.toWei("100000000","ether") , {from:accounts[0]});
         console.log(JSON.stringify( r['receipt']['logs'][0]['args'], null , 2 ) );
         console.log("==========================================");
 
@@ -457,9 +479,6 @@ contract("NFT Pixels", (accounts) => {
         console.log("==========================================");
     });
 });
-
-
-
 
 contract("NFT + Token + Marketplace", (accounts) => {
     //account #0 is the contract owner
@@ -760,33 +779,32 @@ contract("NFT + Token + Marketplace", (accounts) => {
         console.log("==========================================");
 
         
-      /*  console.log(`$ MARKET: payForWonAuction( ${ _auctionID } ) ->`);
-        r = await marketInst.payForWonAuction( _auctionID , {from: accounts[2], value: web3.utils.toWei("0.2","ether") } ); 
-        console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
-        console.log("==========================================");
+      //  console.log(`$ MARKET: payForWonAuction( ${ _auctionID } ) ->`);
+      //  r = await marketInst.payForWonAuction( _auctionID , {from: accounts[2], value: web3.utils.toWei("0.2","ether") } ); 
+      //  console.log(JSON.stringify(  r['receipt']['logs'][0]['args'], null , 2 ) );
+      //  console.log("==========================================");
 
-        console.log(`$ NFT: walletOfOwner( ${ accounts[2] } ) ->`);
-        r = await nftInst.walletOfOwner.call( accounts[2] ); 
-        console.log(JSON.stringify(  r, null , 2 ) );
-        console.log("==========================================");
+      //  console.log(`$ NFT: walletOfOwner( ${ accounts[2] } ) ->`);
+      //  r = await nftInst.walletOfOwner.call( accounts[2] ); 
+      //  console.log(JSON.stringify(  r, null , 2 ) );
+      //  console.log("==========================================");
 
-        console.log(`$ NFT: safeTransferFrom( ${ accounts[2]} , ${marketInst.address} , ${tkn} ) ->`);
-        r = await nftInst.safeTransferFrom( accounts[2] , marketInst.address , tkn , { from : accounts[2] }); 
-        console.log(JSON.stringify(  r['receipt']['logs'][1]['args'], null , 2 ) );
-        console.log("==========================================");
+      //  console.log(`$ NFT: safeTransferFrom( ${ accounts[2]} , ${marketInst.address} , ${tkn} ) ->`);
+      //  r = await nftInst.safeTransferFrom( accounts[2] , marketInst.address , tkn , { from : accounts[2] }); 
+      //  console.log(JSON.stringify(  r['receipt']['logs'][1]['args'], null , 2 ) );
+      //  console.log("==========================================");
 
-        console.log(`$ MARKET: getAllTokensOnSale( ${ nftInst.address } ) ->`);
-        r = await marketInst.getAllTokensOnSale.call( nftInst.address ); 
-        console.log(JSON.stringify(  r, null , 2 ) );
-        console.log("==========================================");
-        _auctionID = r[0];
-        */
+      //  console.log(`$ MARKET: getAllTokensOnSale( ${ nftInst.address } ) ->`);
+      //  r = await marketInst.getAllTokensOnSale.call( nftInst.address ); 
+      //  console.log(JSON.stringify(  r, null , 2 ) );
+      //  console.log("==========================================");
+      //  _auctionID = r[0];
+        
 
         console.log(`$ MARKET: setBuyNow( ${ _auctionID } , 0.3  ) ->`);
         r = await marketInst.setBuyNow( _auctionID , web3.utils.toWei("0.3","ether") , { from: accounts[4] } ); 
         console.log(JSON.stringify(  r, null , 2 ) );
         console.log("==========================================");
-
 
         console.log(`$ MARKET: withdrawAuction( ${ _auctionID } ) ->`);
         r = await marketInst.withdrawAuction( _auctionID , {from: accounts[4]} ); 
@@ -835,7 +853,6 @@ contract("NFT + Token + Marketplace", (accounts) => {
 
     });
 });
-
 var sleep = (delay) => new Promise( (resolve) => setTimeout( resolve, delay));
 
 var assertAddress = (address) => {
